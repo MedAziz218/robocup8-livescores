@@ -5,13 +5,30 @@
 		Controls,
 		MiniMap,
 		type ColorMode,
+		ControlButton,
 	} from "@xyflow/svelte";
+
+	import {
+		ScreenShare as FullScreenIcon,
+		Focus as FocusMatchIcon,
+		SkipForward as FocusNextMatchIcon,
+		SkipBack as FocusPreviousMatchIcon,
+	} from "lucide-svelte";
+
 	import { BackgroundVariant } from "@xyflow/svelte";
 	import { mode } from "mode-watcher";
 	import "@xyflow/svelte/dist/style.css";
-	import { FlowState } from "$lib/stores/flow-state.svelte";
+	import { FlowState, FlowServices } from "$lib/stores/flow-state.svelte";
 
 	import MatchNode from "./match-node.svelte";
+
+	import { type FitViewOptions, useSvelteFlow } from "@xyflow/svelte";
+
+	const sv= useSvelteFlow();
+	$effect(()=>{
+		FlowServices.init(sv)
+
+	})
 
 	let colorMode = $derived<ColorMode>(mode.current ?? "dark");
 	const bgColor = $derived(colorMode == "dark" ? "#1D1C18" : "#f7f5ef");
@@ -40,7 +57,42 @@
 		maxZoom={2}
 	>
 		<Background {bgColor} variant={BackgroundVariant.Dots} />
-		<Controls />
+
+		<Controls
+			style="transition-duration:300ms;"
+			showLock={false}
+			showZoom={false}
+			showFitView={false}
+			class="opacity-10 transition-opacity hover:opacity-60"
+		>
+			<!-- class= "opacity-0 transition-opacity hover:opacity-60" -->
+			<!-- <ControlButton onclick={() => console.log('⚡️')}>⚡️</ControlButton> -->
+			<ControlButton
+				onclick={() => {
+					FlowServices.toggleFullScreen();
+					setTimeout(FlowServices.fitWholeView, 1);
+				}}><FullScreenIcon /></ControlButton
+			>
+			<ControlButton
+				onclick={() => {
+					FlowServices.focusPrevNode();
+				}}><FocusPreviousMatchIcon /></ControlButton
+			>
+			<!-- 
+			<ControlButton
+				onclick={() => {
+					fitView({
+						...$focusNodeAnimation,
+						nodes: [{ id: $focusedNode.toString() }],
+					});
+				}}><FocusMatchIcon /></ControlButton
+			>-->
+			<ControlButton
+				onclick={() => {
+					FlowServices.focusNextNode();
+				}}><FocusNextMatchIcon /></ControlButton
+			> 
+		</Controls>
 		<MiniMap />
 	</SvelteFlow>
 </div>

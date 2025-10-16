@@ -5,13 +5,13 @@
 	import { Switch } from "$lib/components/ui/switch";
 	import { FlowState } from "$lib/stores/flow-state.svelte";
 	import { Input } from "$lib/components/ui/input";
+	import { FlowServices } from "$lib/stores/flow-state.svelte";
 	import TeamComponent from "../flow/team-component.svelte";
 	// Local state for slider values (Slider component expects array)
 	let animationSpeedValue = $derived([FlowState.animationSpeed * 100]);
 	let nodeSpacingValue = $derived([FlowState.nodeSpacing]);
 	let gridSizeValue = $derived([FlowState.gridSize]);
-
-
+	
 	function resetToDefaults() {
 		FlowState.animationSpeed = 1;
 		FlowState.showMinimap = true;
@@ -27,7 +27,7 @@
 		gridSizeValue = [15];
 	}
 </script>
-
+{#if !FlowServices.isFullScreen()}
 <aside class="w-[20%] border-l border-border bg-card p-6 overflow-auto">
 	<h2 class="mb-6 text-lg font-semibold text-card-foreground">
 		Flow Editor Controls
@@ -88,9 +88,16 @@
 
 			<div class="flex items-center justify-between">
 				<Label for="snap">Snap to Grid</Label>
-				<Input id="snap1" type="number" bind:value={FlowState.snapToGrid[0]} />
-				<Input id="snap1" type="number" bind:value={FlowState.snapToGrid[1]} />
-
+				<Input
+					id="snap1"
+					type="number"
+					bind:value={FlowState.snapToGrid[0]}
+				/>
+				<Input
+					id="snap1"
+					type="number"
+					bind:value={FlowState.snapToGrid[1]}
+				/>
 			</div>
 
 			{#if FlowState.snapToGrid}
@@ -134,3 +141,4 @@
 		</div>
 	</div>
 </aside>
+{/if}

@@ -4,7 +4,8 @@
 
   import type { TeamData } from "./team-component.svelte";
   import { Separator } from "$lib/components/ui/separator";
-  import { FlowState } from "$lib/stores/flow-state.svelte";
+  import { FlowState,FlowServices, FocusNodeAnimation } from "$lib/stores/flow-state.svelte";
+
   import {
     ContextMenu,
     ContextMenuContent,
@@ -12,7 +13,7 @@
     ContextMenuTrigger,
     ContextMenuSeparator,
   } from "$lib/components/ui/context-menu";
-  import { useSvelteFlow } from "@xyflow/svelte";
+  import { useSvelteFlow, type FitViewOptions } from "@xyflow/svelte";
   export type MatchNode = Node<{
     matchID: number;
     matchSize: number;
@@ -25,8 +26,8 @@
 
 <script lang="ts">
   import TeamComponent from "./team-component.svelte";
-  const { updateNodeData } = useSvelteFlow();
-  let { id, data }: NodeProps<MatchNode> = $props();
+  const { updateNodeData, fitView } = useSvelteFlow();
+  let { id: nodeID, data }: NodeProps<MatchNode> = $props();
 
   let { matchID, matchSize, teamsData, MatchIsDone, winnerteamID } =
     $state(data);
@@ -48,8 +49,7 @@
       `Action: ${action}, Team ID: ${selectedTeamID} , check selected team: ${selectedTeam.teamID}`,
     );
     if (action.toLowerCase() === "focus") {
-      // FIXME:
-      // triggerFocusNodeAnimation = true;
+      FlowServices.focusNode(nodeID)
     }
     if (action.toLowerCase() === "toggleeliminate") {
       if (
@@ -108,7 +108,7 @@
             />
             <ContextMenuContent>
               <ContextMenuItem
-                disabled={team.teamStatus=="eliminated"}
+                disabled={team.teamStatus == "eliminated"}
                 onclick={() =>
                   handleContextMenuAction("togglewinner", team.teamID, index)}
               >
@@ -123,7 +123,7 @@
               <ContextMenuSeparator></ContextMenuSeparator>
               <ContextMenuItem
                 class="bg-destructive"
-                disabled={team.teamStatus=="winner"}
+                disabled={team.teamStatus == "winner"}
                 onclick={() =>
                   handleContextMenuAction(
                     "toggleeliminate",
