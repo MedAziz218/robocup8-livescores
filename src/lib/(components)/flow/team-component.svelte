@@ -2,9 +2,9 @@
   interface TeamData {
     teamID: number;
     teamName: string;
-    teamStatus?: "winner" | "loser" | undefined;
+    teamStatus?: "winner" | "loser" | "eliminated" | undefined;
     universityAbbr?: string;
-    isBlank? : boolean;
+    isBlank?: boolean;
   }
   export type { TeamData };
 </script>
@@ -16,7 +16,6 @@
     teamStatus = $bindable(undefined),
     universityAbbr = "",
   }: TeamData = $props();
-
 </script>
 
 <div
@@ -24,6 +23,8 @@
            hover:bg-gray-100 dark:hover:bg-gray-700"
   class:winner={teamStatus === "winner"}
   class:loser={teamStatus === "loser"}
+  class:eliminated={teamStatus === "eliminated"}
+
 >
   <div
     class="flex h-[100%] w-[25px] items-center justify-center border-r
@@ -42,6 +43,10 @@
       <span class="font-bold">🏆 {teamName}</span>
     {:else if teamStatus === "loser"}
       <span class="line-through">{teamName}</span>
+    {:else if teamStatus === "eliminated"}
+      <span class="line-through decoration-red-600 decoration-4 "
+        >{teamName}</span
+      >
     {:else}
       {teamName}
     {/if}
@@ -58,7 +63,7 @@
     background-color: rgba(154, 230, 180, 0.5) !important;
   }
 
-  .loser {
+  .loser ,.eliminated {
     opacity: 0.6;
     background-color: rgba(254, 178, 178, 0.1);
   }

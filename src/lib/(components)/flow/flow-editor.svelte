@@ -55,7 +55,8 @@
 		border: 1px solid hsl(var(--border));
 		color: hsl(var(--card-foreground));
 		border-radius: 0.5rem;
-		padding: 0.75rem;
+		padding-inline: 0.15rem;
+		padding-bottom: 1.25rem;
 		font-size: 0.875rem;
 	}
 

@@ -48,6 +48,12 @@ let nodes: Node[] = $state.raw(
 					teamID: "4",
 
 
+				},{
+					teamName: "name",
+					teamID: "3",
+					teamStatus: "eliminated"
+
+
 				}
 				]
 			},

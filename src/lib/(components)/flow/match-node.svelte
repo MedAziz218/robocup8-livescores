@@ -1,5 +1,7 @@
 <script module>
   import type { Node, NodeProps } from "@xyflow/svelte";
+  import { Handle, Position } from "@xyflow/svelte";
+
   import type { TeamData } from "./team-component.svelte";
   import { Separator } from "$lib/components/ui/separator";
   import { FlowState } from "$lib/stores/flow-state.svelte";
@@ -32,30 +34,52 @@
   const isValidTeamsData = $derived(
     teamsData.length >= 2 && teamsData.length <= matchSize,
   );
-  
 
-  function handleContextMenuAction(action: string, selectedTeamID: number, selectedTeamIndex:number) {
+  function handleContextMenuAction(
+    action: string,
+    selectedTeamID: number,
+    selectedTeamIndex: number,
+  ) {
     action = action.toLowerCase();
-    const selectedTeam = teamsData[selectedTeamIndex] 
+    const selectedTeam = teamsData[selectedTeamIndex];
+    winnerteamID = teamsData.findIndex((t) => t.teamStatus == "winner");
 
-    
-    console.log(`Action: ${action}, Team ID: ${selectedTeamID} , check selected team: ${selectedTeam.teamID}`);
+    console.log(
+      `Action: ${action}, Team ID: ${selectedTeamID} , check selected team: ${selectedTeam.teamID}`,
+    );
     if (action.toLowerCase() === "focus") {
-      FlowState.focusedNode = matchID;
       // FIXME:
       // triggerFocusNodeAnimation = true;
     }
+    if (action.toLowerCase() === "toggleeliminate") {
+      if (
+        selectedTeam.teamStatus == undefined ||
+        selectedTeam.teamStatus == "loser"
+      ) {
+        selectedTeam.teamStatus = "eliminated";
+        teamsData[selectedTeamIndex] = selectedTeam;
+      } else if (selectedTeam.teamStatus == "eliminated") {
+        if (winnerteamID == -1) selectedTeam.teamStatus = undefined;
+        else selectedTeam.teamStatus = "loser";
+
+        teamsData[selectedTeamIndex] = selectedTeam;
+      }
+    }
     if (action.toLowerCase() === "togglewinner") {
       // check if teamID is currently already set to winner or no
-      if (selectedTeam.teamStatus == 'winner'){
-        winnerteamID = -1 
-        teamsData.map((t)=>t.teamStatus = undefined)
-      }
-      else {
-        teamsData.map((t)=>t.teamStatus = "loser")
-        winnerteamID = selectedTeamID
-        selectedTeam.teamStatus = "winner"
-        teamsData[selectedTeamIndex] = selectedTeam
+      if (selectedTeam.teamStatus == "winner") {
+        winnerteamID = -1;
+        teamsData.map((t) => {
+          if (t.teamStatus != "eliminated") t.teamStatus = undefined;
+        });
+      } else if (selectedTeam.teamStatus != "eliminated") {
+        teamsData.map((t) => {
+          if (t.teamStatus != "eliminated") t.teamStatus = "loser";
+        });
+
+        winnerteamID = selectedTeamID;
+        selectedTeam.teamStatus = "winner";
+        teamsData[selectedTeamIndex] = selectedTeam;
       }
     }
   }
@@ -84,15 +108,30 @@
             />
             <ContextMenuContent>
               <ContextMenuItem
+                disabled={team.teamStatus=="eliminated"}
                 onclick={() =>
                   handleContextMenuAction("togglewinner", team.teamID, index)}
               >
                 {`${team.teamStatus == "winner" ? "Unset" : "Set"} [${team.teamID}] As Winner`}
               </ContextMenuItem>
               <ContextMenuItem
-                onclick={() => handleContextMenuAction("Focus", team.teamID, index)}
+                onclick={() =>
+                  handleContextMenuAction("Focus", team.teamID, index)}
               >
                 Focus
+              </ContextMenuItem>
+              <ContextMenuSeparator></ContextMenuSeparator>
+              <ContextMenuItem
+                class="bg-destructive"
+                disabled={team.teamStatus=="winner"}
+                onclick={() =>
+                  handleContextMenuAction(
+                    "toggleeliminate",
+                    team.teamID,
+                    index,
+                  )}
+              >
+                ToggleEliminate
               </ContextMenuItem>
 
               <ContextMenuSeparator></ContextMenuSeparator>
@@ -103,6 +142,8 @@
           </ContextMenuTrigger>
         </ContextMenu>
       {/each}
+      <Handle type="source" position={Position.Right}></Handle>
+      <Handle type="target" position={Position.Left}></Handle>
     </div>
   {/if}
 </div>
@@ -112,7 +153,7 @@
     background: hsl(var(--card));
     /* border: 2px solid hsl(var(--border)); */
     /* border-radius: 12px; */
-    padding: 4px;
+    padding: 0px;
     min-width: 320px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
@@ -130,15 +171,6 @@
     font-size: 16px;
     font-weight: 600;
     color: hsl(var(--foreground));
-  }
-
-  .match-size {
-    font-size: 14px;
-    font-weight: 500;
-    color: hsl(var(--muted-foreground));
-    background: hsl(var(--muted));
-    padding: 4px 12px;
-    border-radius: 12px;
   }
 
   .teams-list {
