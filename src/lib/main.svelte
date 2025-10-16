@@ -5,6 +5,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Input } from '$lib/components/ui/input';
 	import { Menu, Settings, User, Moon, Sun } from 'lucide-svelte';
+	import FlowEditor from '$lib/(components)/flow/flow-editor.svelte';
 
 	// State using Svelte 5 runes
 	let counter = $state(0);
@@ -67,23 +68,9 @@
 	<!-- Main Content Area with Side Panel -->
 	<div class="flex flex-1 overflow-hidden">
 		<!-- Main Content (80% width) -->
-		<main class="flex-1 overflow-auto bg-background p-6">
-			<div class="h-full rounded-lg border-2 border-dashed border-border bg-muted/20 p-8">
-				<h2 class="mb-4 text-2xl font-semibold text-foreground">Main Content Area</h2>
-				<p class="text-muted-foreground">
-					This div takes up all available space. You can add your content here.
-				</p>
-				
-				<div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{#each Array(6) as _, i}
-						<div class="rounded-lg border border-border bg-card p-4">
-							<h3 class="mb-2 font-medium text-card-foreground">Content Block {i + 1}</h3>
-							<p class="text-sm text-muted-foreground">
-								Sample content to demonstrate the layout structure.
-							</p>
-						</div>
-					{/each}
-				</div>
+		<main class="flex-1 overflow-hidden bg-background p-6">
+			<div class="h-full rounded-lg border border-border bg-card overflow-hidden">
+				<FlowEditor />
 			</div>
 		</main>
 
