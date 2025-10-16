@@ -24,7 +24,7 @@
 					<Menu class="h-5 w-5" />
 				</Button>
 				<h1 class="text-xl font-semibold text-foreground">
-					Application
+					Robocup 8.0
 				</h1>
 			</div>
 

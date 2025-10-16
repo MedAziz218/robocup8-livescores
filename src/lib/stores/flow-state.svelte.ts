@@ -8,9 +8,8 @@ import {
 
 import { type TeamData } from '$lib/(components)/flow/team-component.svelte';
 type FlowStateType = {
-	nodes: () => Node[],
-	edges: () => Edge[],
-	refreshNodes: () => void,
+	initialNodes: () => Node[],
+	initialEdges: () => Edge[],
 	//
 	animationSpeed: number,
 	showMinimap: boolean,
@@ -23,9 +22,9 @@ type FlowStateType = {
 
 
 }
-let nodes: Node[] = $state.raw([]);
+let initialNodes: Node[] = []
 let teamID = 0;
-for (let i = 1; i < 10; i++) {
+for (let i = 1; i <= 2; i++) {
 
 	let Teams: TeamData[] = []
 
@@ -33,7 +32,7 @@ for (let i = 1; i < 10; i++) {
 		teamID++;
 		Teams.push({ teamName: `team${i}${j}`, teamID: teamID })
 	}
-	nodes.push(
+	initialNodes.push(
 		{
 			id: i.toString(),
 			type: "match",
@@ -49,13 +48,13 @@ for (let i = 1; i < 10; i++) {
 }
 
 
-let edges: Edge[] = $state.raw([
+let initialEdges: Edge[] = [
 	{ id: "e1-2", source: "1", target: "2", animated: true },
 	{ id: "e2-3", source: "2", target: "3" },
 	{ id: "e2-4", source: "2", target: "4" },
 	{ id: "e3-5", source: "3", target: "5" },
 	{ id: "e4-5", source: "4", target: "5" },
-]);
+];
 
 
 
@@ -69,8 +68,8 @@ const FocusNodeAnimation = $state<FitViewOptions>({
 
 
 const FlowState = $state<FlowStateType>({
-	nodes: () => nodes,
-	edges: () => edges,
+	initialNodes: () => initialNodes,
+	initialEdges: () => initialEdges,
 	animationSpeed: 1,
 	showMinimap: true,
 	showControls: true,
@@ -79,7 +78,6 @@ const FlowState = $state<FlowStateType>({
 	edgeStyle: "default",
 	snapToGrid: [25, 25],
 	gridSize: 15,
-	refreshNodes: () => { nodes = [...nodes] }
 })
 
 let _isFullScreen = $state<boolean>(false)
@@ -87,7 +85,9 @@ let _useSvelteFlow = $state<ReturnType<typeof useSvelteFlow>>()
 let _service_initialized = $state<boolean>(false)
 let _focusedNode = 0;
 const _check = () => {
-	if (_service_initialized == false || _useSvelteFlow == undefined) {
+	if (_useSvelteFlow == undefined) return false
+	if (_useSvelteFlow?.getNodes() == undefined) return false
+	if (_service_initialized == false ) {
 		console.error("svelteflow services not initialized yet")
 		return false
 	}
@@ -99,7 +99,9 @@ const FlowServices = $state({
 	focusNode: (nodeID: string | number) => {
 		nodeID = nodeID.toString()
 		if (!_check()) return;
-		if (Number(nodeID) < nodes.length && Number(nodeID) > 0) {
+		if (!_useSvelteFlow?.getNodes()) return;
+
+		if (Number(nodeID) <= _useSvelteFlow?.getNodes().length && Number(nodeID) > 0) {
 			console.log(`Focusing Node ${nodeID}`)
 			_useSvelteFlow?.fitView({ ...FocusNodeAnimation, nodes: [{ id: nodeID }] })
 			_focusedNode = Number(nodeID)
@@ -114,8 +116,15 @@ const FlowServices = $state({
 	focusPrevNode: () => {
 		FlowServices.focusNode(_focusedNode - 1)
 	},
+	organize: () => {
+		console.log('gg',_useSvelteFlow?.getNodes()[0])
+	},
 	handleKeydown: (e: KeyboardEvent) => {
 		switch (e.key) {
+			case "o":
+				e.preventDefault();
+				FlowServices.organize()
+				break;
 			case "f":
 				e.preventDefault();
 				FlowServices.toggleFullScreen()

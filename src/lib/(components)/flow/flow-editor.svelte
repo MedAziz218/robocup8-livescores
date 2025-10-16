@@ -5,6 +5,8 @@
 		Controls,
 		MiniMap,
 		type ColorMode,
+		type Edge,
+		type Node,
 		ControlButton,
 	} from "@xyflow/svelte";
 
@@ -24,16 +26,13 @@
 
 	import { type FitViewOptions, useSvelteFlow } from "@xyflow/svelte";
 
-	const sv= useSvelteFlow();
-	$effect(()=>{
-		FlowServices.init(sv)
-
-	})
+	const sv = useSvelteFlow();
+	$effect(() => {
+		FlowServices.init(sv);
+	});
 
 	let colorMode = $derived<ColorMode>(mode.current ?? "dark");
 	const bgColor = $derived(colorMode == "dark" ? "#1D1C18" : "#f7f5ef");
-	let nodes = $derived(FlowState.nodes());
-	let edges = $derived(FlowState.edges());
 
 	const nodeTypes = {
 		match: MatchNode,
@@ -42,6 +41,9 @@
 		type: "step",
 		markerEnd: "edge-circle",
 	};
+
+	let nodes = $state.raw<Node[]>(FlowState.initialNodes());
+	let edges = $state.raw<Edge[]>(FlowState.initialEdges());
 </script>
 
 <div class="h-full w-full">
@@ -91,7 +93,7 @@
 				onclick={() => {
 					FlowServices.focusNextNode();
 				}}><FocusNextMatchIcon /></ControlButton
-			> 
+			>
 		</Controls>
 		<MiniMap />
 	</SvelteFlow>
