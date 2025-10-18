@@ -1,10 +1,15 @@
 <script module>
   import type { Node, NodeProps } from "@xyflow/svelte";
-  import { Handle, Position } from "@xyflow/svelte";
+  import { Handle, Position, useNodes } from "@xyflow/svelte";
 
   import type { TeamData } from "./team-component.svelte";
   import { Separator } from "$lib/components/ui/separator";
-  import { FlowState,FlowServices, FocusMatchAnimation } from "$lib/stores/flow-state.svelte";
+  import {
+    FlowState,
+    FlowServices,
+    FocusMatchAnimation,
+    MatchServices,
+  } from "$lib/stores/flow-state.svelte";
 
   import {
     ContextMenu,
@@ -15,28 +20,56 @@
   } from "$lib/components/ui/context-menu";
 
   import { useSvelteFlow, type FitViewOptions } from "@xyflow/svelte";
-  export type MatchNode = Node<{
-    round: number,
+  export type MatchNodeData = {
+    round: number;
     matchID: number;
     matchSize: number;
     text: string;
     teamsData: TeamData[];
     MatchIsDone?: boolean;
     winnerteamID?: number;
-  }>;
+    winnerNextMatchID?: string;
+  };
+  export type MatchNode = Node<MatchNodeData>;
 </script>
 
 <script lang="ts">
   import TeamComponent from "./team-component.svelte";
-  const { updateNodeData, fitView } = useSvelteFlow();
-  let { id: nodeID, data }: NodeProps<MatchNode> = $props();
+  import { useNodesData } from '@xyflow/svelte';
+  const { updateNodeData, fitView,getNode } = useSvelteFlow();
+  let { id: nodeID, data = $bindable()}: NodeProps<MatchNode> = $props();
+ 
+  const nodeData = useNodesData([nodeID]);
+   let {
+    round,
+    matchID,
+    matchSize,
+    teamsData,
+    MatchIsDone,
+    winnerteamID,
+    winnerNextMatchID,
+  } = $state(data);
 
-  let { round,matchID, matchSize, teamsData, MatchIsDone, winnerteamID } =
-    $state(data);
+  $effect(() => {
+    // nodeData changes whenever the data of the passed node ids get updated
+    if (nodeData.current[0].data){
+      teamsData = nodeData.current[0].data.teamsData as TeamData[]
+      winnerNextMatchID = nodeData.current[0].data.winnerNextMatchID as string
+    }
+  });
+
+    $effect(() => {
+    // nodeData changes whenever the data of the passed node ids get updated
+    if (teamsData){
+      updateNodeData(nodeID,{teamsData:teamsData})
+    }
+  });
+
   // Validate teamsData length
   const isValidTeamsData = $derived(
     teamsData.length >= 2 && teamsData.length <= matchSize,
   );
+
 
   function handleContextMenuAction(
     action: string,
@@ -51,7 +84,7 @@
       `Action: ${action}, Team ID: ${selectedTeamID} , check selected team: ${selectedTeam.teamID}`,
     );
     if (action.toLowerCase() === "focus") {
-      FlowServices.focusMatch(matchID)
+      FlowServices.focusMatch(matchID);
     }
     if (action.toLowerCase() === "toggleeliminate") {
       if (
@@ -78,9 +111,16 @@
         teamsData.map((t) => {
           if (t.teamStatus != "eliminated") t.teamStatus = "loser";
         });
-
+        let oldWinnerID = winnerteamID==-1 ? undefined :teamsData[winnerteamID].teamID ;
         winnerteamID = selectedTeamID;
         selectedTeam.teamStatus = "winner";
+
+        // winnerNextMatchID = getNode(nodeID)?.data.winnerNextMatchID as string
+
+        console.log(`winnerNextMatchID=${winnerNextMatchID}, ${nodeData.current[0].data.winnerNextMatchID}`)
+        FlowServices.addTeamToMatch(winnerNextMatchID||'',selectedTeam,oldWinnerID)
+        FlowServices.removeTeamFromMatch(winnerNextMatchID||'',selectedTeam,oldWinnerID)
+
         teamsData[selectedTeamIndex] = selectedTeam;
       }
     }
@@ -89,8 +129,8 @@
 
 <div class="match-container">
   <div class="match-header">
-    <span class="match-id">Match #{round}-{matchID}</span>
-    <!-- <span class="match-size">{teamsData.length}/{matchSize}</span> -->
+    <span class="match-id">{`Match ${matchID}`}</span>
+    <span class="match-size">{`R${round}`}</span>
   </div>
 
   {#if !isValidTeamsData}
@@ -110,19 +150,22 @@
               universityAbbr={team.universityAbbr}
             />
             <ContextMenuContent>
-              <ContextMenuItem
-                disabled={team.teamStatus == "eliminated"}
-                onclick={() =>
-                  handleContextMenuAction("togglewinner", team.teamID, index)}
-              >
-                {`${team.teamStatus == "winner" ? "Unset" : "Set"} [${team.teamID}] As Winner`}
-              </ContextMenuItem>
+              {#if team.teamID != -1}
+                <ContextMenuItem
+                  disabled={team.teamStatus == "eliminated"}
+                  onclick={() =>
+                    handleContextMenuAction("togglewinner", team.teamID, index)}
+                >
+                  {`${team.teamStatus == "winner" ? "Unset" : "Set"} [${team.teamID}] As Winner`}
+                </ContextMenuItem>
+              {/if}
               <ContextMenuItem
                 onclick={() =>
                   handleContextMenuAction("Focus", team.teamID, index)}
               >
                 Focus
               </ContextMenuItem>
+
               <ContextMenuSeparator></ContextMenuSeparator>
               <ContextMenuItem
                 class="bg-destructive"

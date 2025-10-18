@@ -23,13 +23,18 @@
 	import { FlowState, FlowServices } from "$lib/stores/flow-state.svelte";
 
 	import MatchNode from "./match-node.svelte";
-
-	import { type FitViewOptions, useSvelteFlow } from "@xyflow/svelte";
-
+	$inspect(FlowState.startRound)
+	import {
+		type FitViewOptions,
+		useSvelteFlow,
+		useConnection,
+	} from "@xyflow/svelte";
+	const Rounds = $derived(
+		[...Array(FlowState.numberOfRounds).keys()].map((i) => i + 1),
+	);
 	const sv = useSvelteFlow();
-	
+	const c = useConnection();
 
-	
 	let colorMode = $derived<ColorMode>(mode.current ?? "dark");
 	const bgColor = $derived(colorMode == "dark" ? "#1D1C18" : "#f7f5ef");
 
@@ -43,18 +48,17 @@
 
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
-	export function setNodes  (newNodes:Node[]) : void {
-		nodes = [...newNodes]
+	export function setNodes(newNodes: Node[]): void {
+		nodes = [...newNodes];
 	}
-	export function setEdges  (newEdges:Edge[]) : void {
-		edges = [...newEdges]
+	export function setEdges(newEdges: Edge[]): void {
+		edges = [...newEdges];
 	}
 
 	$effect(() => {
-		FlowServices.init(sv);
-		FlowState.setNodes = setNodes
-		FlowState.setEdges = setEdges
-
+		FlowServices.init(sv, c);
+		FlowState.setNodes = setNodes;
+		FlowState.setEdges = setEdges;
 	});
 </script>
 
@@ -111,6 +115,22 @@
 			style="transition-duration:300ms;"
 			class="opacity-0 transition-opacity hover:opacity-60"
 		/>
+		<div
+			class="svelte-flow__panel svelte-flow__attribution top right mr-2 mt-2
+			 opacity-10 transition-opacity hover:opacity-60 x-4 py-2 text-base text-black"
+		>
+			<select
+				bind:value={FlowState.startRound}
+				onchange={()=>{
+					FlowServices.organize()
+					FlowServices.fitWholeView()
+				}}
+			>
+				{#each Rounds as round}
+					<option value={round}>start round {round}</option>
+				{/each}
+			</select>
+		</div>
 	</SvelteFlow>
 </div>
 
@@ -124,18 +144,8 @@
 		border: 1px solid hsl(var(--border));
 		color: hsl(var(--card-foreground));
 		border-radius: 0.5rem;
-		padding-inline: 0.15rem;
 		padding-bottom: 1.25rem;
 		font-size: 0.875rem;
-	}
-
-	:global(.svelte-flow__node.selected) {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
-	}
-
-	:global(.svelte-flow__edge-path) {
-		stroke: hsl(var(--primary));
 	}
 
 	:global(.svelte-flow__controls) {
