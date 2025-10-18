@@ -107,6 +107,10 @@
         teamsData.map((t) => {
           if (t.teamStatus != "eliminated") t.teamStatus = undefined;
         });
+
+        FlowServices.removeTeamFromMatch(winnerNextMatchID||'',selectedTeam,nodeID)
+        
+
       } else if (selectedTeam.teamStatus != "eliminated") {
         teamsData.map((t) => {
           if (t.teamStatus != "eliminated") t.teamStatus = "loser";
@@ -118,8 +122,9 @@
         // winnerNextMatchID = getNode(nodeID)?.data.winnerNextMatchID as string
 
         console.log(`winnerNextMatchID=${winnerNextMatchID}, ${nodeData.current[0].data.winnerNextMatchID}`)
-        FlowServices.addTeamToMatch(winnerNextMatchID||'',selectedTeam,oldWinnerID)
-        FlowServices.removeTeamFromMatch(winnerNextMatchID||'',selectedTeam,oldWinnerID)
+        FlowServices.addTeamToMatch(winnerNextMatchID||'',selectedTeam,oldWinnerID,nodeID)
+        
+        
 
         teamsData[selectedTeamIndex] = selectedTeam;
       }

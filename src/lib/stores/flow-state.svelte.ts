@@ -113,7 +113,7 @@ function generateInitialEdges() {
 					target: roundB[b].id,
 					type: 'step',
 					style: `stroke-width: 3px;`,
-					data: {round:1}
+					data: {round:r}
 				}
 				a++
 				initialEdges.push(e)
@@ -255,7 +255,7 @@ const FlowServices = $state({
 			return n
 		})
 		edges = edges.map((e) => {
-			if (e.data?.round as number <FlowState.startRound){
+			if (e.data?.round as number < FlowState.startRound){
 				e.hidden = true
 			}else {
 				e.hidden = false
@@ -377,7 +377,7 @@ const FlowServices = $state({
 		const i = teamsData.findIndex((t) => t.teamID == -1);
 		teamsData[i] = newteam;
 	},
-	updateWinnerTeam: (targetMatchID: string, winnerteamData: TeamData, oldWinnerTeamID?: number) => {
+	addTeamToMatch: (targetMatchID: string, winnerteamData: TeamData, oldWinnerTeamID?: number, sourceNodeID?:string) => {
 		// FlowServices.applySettings()
 		// console.log(FlowServices.getNodes())
 		const n = FlowServices.getNodes().find((n) => n.id == targetMatchID)
@@ -397,11 +397,39 @@ const FlowServices = $state({
 			if (i < 0) {
 
 				i = old_teams_data.findIndex((t) => t.teamID == -1)
-				old_teams_data[i] = { ...winnerteamData, teamStatus: undefined }
+				old_teams_data[i] = { ...winnerteamData, teamStatus: undefined,id:old_teams_data[i].id  }
 			}
 		}
 
 		_useSvelteFlow?.updateNodeData(n.id, { teamsData: old_teams_data })
+
+		
+		if (sourceNodeID){
+			const e = FlowServices.getEdges().find((e)=>e.source==sourceNodeID)
+			if (e)
+			_useSvelteFlow?.updateEdge(e.id, {...e,style: `stroke-width: 3px; stroke: green`})
+		}
+	}
+	,
+	removeTeamFromMatch: (targetMatchID: string, winnerteamData: TeamData,sourceNodeID?:string) => {
+		// FlowServices.applySettings()
+		// console.log(FlowServices.getNodes())
+		const n = FlowServices.getNodes().find((n) => n.id == targetMatchID)
+		if (!n) { console.log("cant find id "); return }
+
+		let old_teams_data = n.data.teamsData as TeamData[]
+		
+
+		let i = old_teams_data.findIndex((t) => t.teamID == winnerteamData.teamID)
+		console.log("here is i ",i,n.id)
+		old_teams_data[i] = { ...winnerteamData, teamStatus: undefined, teamID:-1 ,teamName:'-',id:old_teams_data[i].id }
+
+		_useSvelteFlow?.updateNodeData(n.id, { teamsData: old_teams_data })
+		if (sourceNodeID){
+			const e = FlowServices.getEdges().find((e)=>e.source==sourceNodeID)
+			if (e)
+			_useSvelteFlow?.updateEdge(e.id, {...e,style: `stroke-width: 3px;`})
+		}
 	}
 
 })
