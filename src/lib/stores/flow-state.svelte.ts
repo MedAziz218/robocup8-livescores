@@ -8,24 +8,52 @@ import {
 
 import { type TeamData } from '$lib/(components)/flow/team-component.svelte';
 let initialNodes: Node[] = []
+function closestPower(n: number, p: number) {
+	let x = p
+	while (x <= n) x *= p;
+	return x / p
+}
+function TournamentRounds(n: number, p: number) {
+	let s = 1
+	let r = 1
+	while (n > 1) {
+		r += 1
+		s += n
+		n = Number((n / p).toFixed(0))
+	}
+	return { numberOfTotlaMatches: s, numberOfRounds: r }
+}
 function generateInitialNodes() {
 	initialNodes = []
-	let teamID = 0;
+	let team_counter = 0;
+	let match_counter = 0;
 
-	for (let i = 1; i <= FlowState.numberOfMatches; i++) {
+	let numberOfInitialMatches = closestPower(_numberOfTeams / _matchSize, _matchSize)
+
+	let { numberOfTotlaMatches, numberOfRounds } = TournamentRounds(numberOfInitialMatches, _matchSize);
+
+	FlowState.numberOfInitialMatches = numberOfInitialMatches;
+	FlowState.numberOfTotlaMatches = numberOfTotlaMatches;
+	FlowState.numberOfRounds = numberOfRounds;
+
+	// add initial rounds
+
+	for (let i = 1; i <= numberOfInitialMatches; i++) {
 
 		let Teams: TeamData[] = []
 
-		for (let j = 1; j <= FlowState.matchSize; j++) {
-			teamID++;
-			Teams.push({ teamName: `team${i}${j}`, teamID: teamID })
+		for (let j = 1; j <= _matchSize; j++) {
+			team_counter++;
+			Teams.push({ id: team_counter.toString(), teamName: '-', teamID: team_counter })
 		}
+		match_counter++;
 		initialNodes.push(
 			{
-				id: i.toString(),
+				id: match_counter.toString(),
 				type: "match",
 				data: {
-					matchID: i,
+					round: 1,
+					matchID: match_counter,
 					matchSize: FlowState.matchSize,
 					teamsData: Teams
 				},
@@ -34,6 +62,32 @@ function generateInitialNodes() {
 		)
 	}
 
+	for (let r = 2; r <= numberOfRounds; r++) {
+		for (let i = 1; i <= _matchSize ** (numberOfRounds - r); i++) {
+
+			let Teams: TeamData[] = []
+
+			for (let j = 1; j <= _matchSize; j++) {
+				team_counter++;
+				Teams.push({ id: team_counter.toString(), teamName: '-', teamID: -1 })
+			}
+			match_counter++;
+			initialNodes.push(
+				{
+					id: match_counter.toString(),
+					type: "match",
+					data: {
+						round: r,
+						matchID: match_counter,
+						matchSize: FlowState.matchSize,
+						teamsData: Teams
+					},
+					position: { x: 0, y: 0 },
+				},
+			)
+		}
+
+	}
 }
 
 let initialEdges: Edge[] = [
@@ -68,8 +122,11 @@ type FlowStateType = {
 	edgeStyle: "default" | "step" | "smoothstep",
 	snapToGrid: [number, number],
 	gridSize: number,
-	matchSize: number,
-	numberOfMatches: number,
+	matchSize: "2" | "4",
+	numberOfTeams: number,
+	numberOfInitialMatches: number,
+	numberOfTotlaMatches: number,
+	numberOfRounds: number,
 	xpadding: number,
 	ypadding: number,
 
@@ -89,16 +146,20 @@ const FlowState = $state<FlowStateType>({
 	edgeStyle: "default",
 	snapToGrid: [5, 5],
 	gridSize: 15,
-	matchSize: 2,
-	numberOfMatches: 1,
-	xpadding: 20,
+	matchSize: "2",
+	numberOfTeams: 19,
+	numberOfInitialMatches: 0,
+	numberOfTotlaMatches: 0,
+	numberOfRounds: 0,
+	xpadding: 200,
 	ypadding: 0,
 
 })
 
 let _isFullScreen = $state<boolean>(false)
 let _useSvelteFlow = $state<ReturnType<typeof useSvelteFlow>>()
-
+const _matchSize = $derived(Number(FlowState.matchSize))
+const _numberOfTeams = $derived(FlowState.numberOfTeams)
 
 let _service_initialized = $state<boolean>(false)
 let _focusedMatch = 0;
@@ -121,7 +182,7 @@ const FlowServices = $state({
 
 		if (Number(matchID) <= FlowServices.getNodes().length && Number(matchID) > 0) {
 			console.log(`Focusing Match ${matchID}`)
-			let node = FlowServices.getNodes().find((n)=>{return n.data.matchID == matchID }) 
+			let node = FlowServices.getNodes().find((n) => { return n.data.matchID == matchID })
 			if (!node) throw Error("no node found with this matchID ${")
 			_useSvelteFlow?.fitView({ ...FocusMatchAnimation, nodes: [{ id: node.id }] })
 			_focusedMatch = Number(matchID)
@@ -141,65 +202,87 @@ const FlowServices = $state({
 		let nodes = FlowServices.getNodes()
 		if (nodes.length <= 0) return
 		let a = nodes.length
-		let n = 2
-		while (a - n >= n) {
-			n *= 2
-		}
-		//1 --> n --> a
-
 
 		let w0 = (nodes[0].measured?.width || 0) + FlowState.xpadding
 		let h0 = (nodes[0].measured?.height || 0) + FlowState.ypadding
 		let h = h0
-		let w = -w0
-		let x = 1
-		// _useSvelteFlow?.updateNode(nodes[0].id, { position: { x: w, y: h } })
-		console.log(`n=${n} w0=${w0} h0=${h0}`)
+		let w = w0
+		for (let r = 1; r <= FlowState.numberOfRounds; r++) {
+			const round_nodes = nodes.filter((n) => n.data.round == r)
+			h = h0
 
-		for (let i = 0; i < a-n; i++) {
-			h = h0 + h0 * (x % n + Math.trunc(x / n))
-			x += 2
-			_useSvelteFlow?.updateNode(nodes[i].id, { position: { x: w, y: h } })
+			for (let i = 0; i < round_nodes.length; i++) {
+				h += h0
+				_useSvelteFlow?.updateNode(round_nodes[i].id, { position: { x: w*r, y: h } })
+			}
 		}
-		// FlowServices.getNodes()
-		// nodes = FlowServices.getNodes()
-		// for (let i = 0; i < a-n; i++) {
-		// 	const node = nodes[i]
-		// 	console.log(`checking nodeid:${node.id} matchID=${node.data.matchID}` )
-
-		// 	if (node.id != node.data.matchID) {
-		// 		console.log("found problem ")
-		// 		const correct_node = nodes.find((n)=>n.data.matchID == node.id+1) 
-		// 		// _useSvelteFlow?.updateNode(nodes[i].id, { data: correct_node?.data })
-		// 	}
-		// }
-		w += w0
-		h = h0
-		console.log(`n=${n} w0=${w0} h0=${h0}`)
-		
-		for (let i =  a-n; i < a; i++) {
-			h += h0
-			_useSvelteFlow?.updateNode(nodes[i].id, { position: { x: -w, y: h } })
-		}
-
 
 
 	},
+	// organize: () => {
+	// 	if (!_check()) return
+	// 	let nodes = FlowServices.getNodes()
+	// 	if (nodes.length <= 0) return
+	// 	let a = nodes.length
+	// 	let n = 2
+	// 	while (a - n >= n) {
+	// 		n *= 2
+	// 	}
+	// 	//1 --> n --> a
+
+
+	// 	let w0 = (nodes[0].measured?.width || 0) + FlowState.xpadding
+	// 	let h0 = (nodes[0].measured?.height || 0) + FlowState.ypadding
+	// 	let h = h0
+	// 	let w = -w0
+	// 	let x = 1
+	// 	// _useSvelteFlow?.updateNode(nodes[0].id, { position: { x: w, y: h } })
+	// 	console.log(`n=${n} w0=${w0} h0=${h0}`)
+
+	// 	for (let i = 0; i < a-n; i++) {
+	// 		h = h0 + h0 * (x % n + Math.trunc(x / n))
+	// 		x += 2
+	// 		_useSvelteFlow?.updateNode(nodes[i].id, { position: { x: w, y: h } })
+	// 	}
+	// 	// FlowServices.getNodes()
+	// 	// nodes = FlowServices.getNodes()
+	// 	// for (let i = 0; i < a-n; i++) {
+	// 	// 	const node = nodes[i]
+	// 	// 	console.log(`checking nodeid:${node.id} matchID=${node.data.matchID}` )
+
+	// 	// 	if (node.id != node.data.matchID) {
+	// 	// 		console.log("found problem ")
+	// 	// 		const correct_node = nodes.find((n)=>n.data.matchID == node.id+1) 
+	// 	// 		// _useSvelteFlow?.updateNode(nodes[i].id, { data: correct_node?.data })
+	// 	// 	}
+	// 	// }
+	// 	w += w0
+	// 	h = h0
+	// 	console.log(`n=${n} w0=${w0} h0=${h0}`)
+
+	// 	for (let i =  a-n; i < a; i++) {
+	// 		h += h0
+	// 		_useSvelteFlow?.updateNode(nodes[i].id, { position: { x: -w, y: h } })
+	// 	}
+
+
+
+	// },
 	clearNodes: () => {
 		_useSvelteFlow?.deleteElements({ nodes: FlowServices.getNodes(), edges: [] })
 	},
-	applySettings: (matchSize?: number, numberOfMatches?: number, xpadding?: number, ypadding?: number) => {
-		if (matchSize != undefined) { FlowState.matchSize = matchSize }
-		if (numberOfMatches != undefined) { FlowState.numberOfMatches = numberOfMatches }
-		if (xpadding != undefined) { FlowState.xpadding = xpadding }
-		if (ypadding != undefined) { FlowState.ypadding = ypadding }
+	applySettings: (numberOfTeams?: number) => {
+		// if (matchSize != undefined) { FlowState.matchSize = matchSize }
+		// if (numberOfMatches != undefined) { FlowState.numberOfMatches = numberOfMatches }
+		// if (xpadding != undefined) { FlowState.xpadding = xpadding }
+		// if (ypadding != undefined) { FlowState.ypadding = ypadding }
+		if (numberOfTeams != undefined) { FlowState.numberOfTeams = numberOfTeams }
 		FlowServices.clearNodes()
 		generateInitialNodes()
-		setTimeout(() => { FlowState.setNodes && FlowState.setNodes(initialNodes) }, 50)
+		setTimeout(() => { FlowState.setNodes && FlowState.setNodes(initialNodes) }, 0)
 
 		setTimeout(FlowServices.organize, 100)
 		setTimeout(FlowServices.fitWholeView, 150)
-		// _nodes = FlowState.initialNodes()
 		console.log(FlowServices.getNodes(), initialNodes)
 
 
@@ -208,7 +291,7 @@ const FlowServices = $state({
 		switch (e.key) {
 			case "v":
 				e.preventDefault();
-				FlowServices.applySettings(3, 3)
+				FlowServices.applySettings()
 				break;
 			case "c":
 				e.preventDefault();

@@ -1,5 +1,6 @@
 <script module>
   interface TeamData {
+    id: string,
     teamID: number;
     teamName: string;
     teamStatus?: "winner" | "loser" | "eliminated" | undefined;
@@ -11,6 +12,7 @@
 
 <script lang="ts">
   let {
+    id,
     teamID,
     teamName,
     teamStatus = $bindable(undefined),
@@ -32,7 +34,7 @@
            font-semibold text-gray-700
              dark:border-gray-600 dark:bg-[#E2AC0D]"
   >
-    {teamID}
+    {teamID>0 ? teamID : '-'}
   </div>
   <div
     class="w-full truncate bg-white py-1 pl-1 text-left text-gray-800

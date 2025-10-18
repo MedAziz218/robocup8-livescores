@@ -8,13 +8,8 @@
 		SelectItem,
 		SelectTrigger,
 	} from "$lib/components/ui/select";
-	import { FlowServices } from "$lib/stores/flow-state.svelte";
+	import { FlowServices, FlowState } from "$lib/stores/flow-state.svelte";
 
-
-	let matchSize = $state<string>("2");
-	let numberOfMatches = $state(4);
-	let xPadding = $state(20);
-	let yPadding = $state(0);
 </script>
 
 {#if !FlowServices.isFullScreen()}
@@ -25,9 +20,9 @@
 		<!-- Match Size Setting -->
 		<div class="space-y-2 w-full">
 			<Label for="match-size">Match Size</Label>
-			<Select bind:value={matchSize} type="single" >
+			<Select bind:value={FlowState.matchSize} type="single" >
 				<SelectTrigger id="match-size" class="w-full">
-					{matchSize}
+					{FlowState.matchSize}
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="2">2</SelectItem>
@@ -38,13 +33,43 @@
 
 		<!-- Number of Matches Setting -->
 		<div class="space-y-2">
-			<Label for="num-matches">Number of Matches</Label>
+			<Label for="num-teams">Number of Teams</Label>
+			<Input
+				id="num-teams"
+				type="number"
+				min="1"
+				bind:value={FlowState.numberOfTeams}
+				class="w-full"
+			/>
+		</div>
+		<div class="space-y-2">
+			<Label for="num-matches">Total Number of Matches</Label>
 			<Input
 				id="num-matches"
 				type="number"
-				min="1"
-				bind:value={numberOfMatches}
+				bind:value={FlowState.numberOfTotlaMatches}
 				class="w-full"
+				disabled
+			/>
+		</div>
+		<div class="space-y-2">
+			<Label for="num-matches">Number of Round</Label>
+			<Input
+				id="num-matches"
+				type="number"
+				bind:value={FlowState.numberOfRounds}
+				class="w-full"
+				disabled
+			/>
+		</div>
+		<div class="space-y-2">
+			<Label for="num-matches">Initial Number of Matches</Label>
+			<Input
+				id="num-matches"
+				type="number"
+				bind:value={FlowState.numberOfInitialMatches}
+				class="w-full"
+				disabled
 			/>
 		</div>
 
@@ -55,7 +80,7 @@
 				id="x-padding"
 				type="number"
 				min="0"
-				bind:value={xPadding}
+				bind:value={FlowState.xpadding}
 				class="w-full"
 			/>
 		</div>
@@ -67,14 +92,14 @@
 				id="y-padding"
 				type="number"
 				min="0"
-				bind:value={yPadding}
+				bind:value={FlowState.ypadding}
 				class="w-full"
 			/>
 		</div>
 
 		<!-- Added Organize and Clear buttons alongside Apply button -->
 		<div class="pt-4 space-y-2">
-			<Button class="w-full" variant="default" onclick={()=>{FlowServices.applySettings(Number(matchSize),numberOfMatches,xPadding,yPadding)}}>
+			<Button class="w-full" variant="default" onclick={()=>{FlowServices.applySettings()}}>
 				Apply
 			</Button>
 			<Button class="w-full" variant="outline" onclick={()=>{FlowServices.organize()}}>

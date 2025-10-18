@@ -13,8 +13,10 @@
     ContextMenuTrigger,
     ContextMenuSeparator,
   } from "$lib/components/ui/context-menu";
+
   import { useSvelteFlow, type FitViewOptions } from "@xyflow/svelte";
   export type MatchNode = Node<{
+    round: number,
     matchID: number;
     matchSize: number;
     text: string;
@@ -29,7 +31,7 @@
   const { updateNodeData, fitView } = useSvelteFlow();
   let { id: nodeID, data }: NodeProps<MatchNode> = $props();
 
-  let { matchID, matchSize, teamsData, MatchIsDone, winnerteamID } =
+  let { round,matchID, matchSize, teamsData, MatchIsDone, winnerteamID } =
     $state(data);
   // Validate teamsData length
   const isValidTeamsData = $derived(
@@ -87,7 +89,7 @@
 
 <div class="match-container">
   <div class="match-header">
-    <span class="match-id">Match #{matchID}</span>
+    <span class="match-id">Match #{round}-{matchID}</span>
     <!-- <span class="match-size">{teamsData.length}/{matchSize}</span> -->
   </div>
 
@@ -97,10 +99,11 @@
     </div>
   {:else}
     <div class="teams-list">
-      {#each teamsData as team, index (team.teamID)}
+      {#each teamsData as team, index (team.id)}
         <ContextMenu>
           <ContextMenuTrigger>
             <TeamComponent
+              id={team.id}
               teamID={team.teamID}
               teamName={team.teamName}
               bind:teamStatus={teamsData[index].teamStatus}
