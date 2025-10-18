@@ -27,10 +27,9 @@
 	import { type FitViewOptions, useSvelteFlow } from "@xyflow/svelte";
 
 	const sv = useSvelteFlow();
-	$effect(() => {
-		FlowServices.init(sv);
-	});
+	
 
+	
 	let colorMode = $derived<ColorMode>(mode.current ?? "dark");
 	const bgColor = $derived(colorMode == "dark" ? "#1D1C18" : "#f7f5ef");
 
@@ -42,8 +41,21 @@
 		markerEnd: "edge-circle",
 	};
 
-	let nodes = $state.raw<Node[]>(FlowState.initialNodes());
-	let edges = $state.raw<Edge[]>(FlowState.initialEdges());
+	let nodes = $state.raw<Node[]>([]);
+	let edges = $state.raw<Edge[]>([]);
+	export function setNodes  (newNodes:Node[]) : void {
+		nodes = [...newNodes]
+	}
+	export function setEdges  (newEdges:Edge[]) : void {
+		edges = [...newEdges]
+	}
+
+	$effect(() => {
+		FlowServices.init(sv);
+		FlowState.setNodes = setNodes
+		FlowState.setEdges = setEdges
+
+	});
 </script>
 
 <div class="h-full w-full">
@@ -77,7 +89,7 @@
 			>
 			<ControlButton
 				onclick={() => {
-					FlowServices.focusPrevNode();
+					FlowServices.focusPrevMatch();
 				}}><FocusPreviousMatchIcon /></ControlButton
 			>
 			<!-- 
@@ -91,11 +103,14 @@
 			>-->
 			<ControlButton
 				onclick={() => {
-					FlowServices.focusNextNode();
+					FlowServices.focusNextMatch();
 				}}><FocusNextMatchIcon /></ControlButton
 			>
 		</Controls>
-		<MiniMap />
+		<MiniMap
+			style="transition-duration:300ms;"
+			class="opacity-0 transition-opacity hover:opacity-60"
+		/>
 	</SvelteFlow>
 </div>
 

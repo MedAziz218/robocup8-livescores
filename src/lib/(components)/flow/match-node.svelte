@@ -4,7 +4,7 @@
 
   import type { TeamData } from "./team-component.svelte";
   import { Separator } from "$lib/components/ui/separator";
-  import { FlowState,FlowServices, FocusNodeAnimation } from "$lib/stores/flow-state.svelte";
+  import { FlowState,FlowServices, FocusMatchAnimation } from "$lib/stores/flow-state.svelte";
 
   import {
     ContextMenu,
@@ -49,7 +49,7 @@
       `Action: ${action}, Team ID: ${selectedTeamID} , check selected team: ${selectedTeam.teamID}`,
     );
     if (action.toLowerCase() === "focus") {
-      FlowServices.focusNode(nodeID)
+      FlowServices.focusMatch(matchID)
     }
     if (action.toLowerCase() === "toggleeliminate") {
       if (
@@ -93,7 +93,7 @@
 
   {#if !isValidTeamsData}
     <div class="error-message">
-      Invalid teams data: must have between 2 and {matchSize} teamsgg
+      Invalid teams data: must have between 2 and {matchSize} teams
     </div>
   {:else}
     <div class="teams-list">

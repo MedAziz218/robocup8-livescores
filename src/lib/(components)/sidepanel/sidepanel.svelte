@@ -1,142 +1,87 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
 	import { Label } from "$lib/components/ui/label";
-	import { Slider } from "$lib/components/ui/slider";
-	import { Switch } from "$lib/components/ui/switch";
-	import { FlowState } from "$lib/stores/flow-state.svelte";
 	import { Input } from "$lib/components/ui/input";
+	import {
+		Select,
+		SelectContent,
+		SelectItem,
+		SelectTrigger,
+	} from "$lib/components/ui/select";
 	import { FlowServices } from "$lib/stores/flow-state.svelte";
-	import TeamComponent from "../flow/team-component.svelte";
-	// Local state for slider values (Slider component expects array)
-	let animationSpeedValue = $derived([FlowState.animationSpeed * 100]);
-	let nodeSpacingValue = $derived([FlowState.nodeSpacing]);
-	let gridSizeValue = $derived([FlowState.gridSize]);
-	
-	function resetToDefaults() {
-		FlowState.animationSpeed = 1;
-		FlowState.showMinimap = true;
-		FlowState.showControls = true;
-		FlowState.fitViewEnabled = false;
-		FlowState.nodeSpacing = 100;
-		FlowState.edgeStyle = "default";
-		FlowState.snapToGrid = [25, 25];
-		FlowState.gridSize = 15;
 
-		animationSpeedValue = [100];
-		nodeSpacingValue = [100];
-		gridSizeValue = [15];
-	}
+
+	let matchSize = $state<string>("2");
+	let numberOfMatches = $state(4);
+	let xPadding = $state(20);
+	let yPadding = $state(0);
 </script>
+
 {#if !FlowServices.isFullScreen()}
-<aside class="w-[20%] border-l border-border bg-card p-6 overflow-auto">
-	<h2 class="mb-6 text-lg font-semibold text-card-foreground">
-		Flow Editor Controls
-	</h2>
+<aside class="w-80 border-l border-border bg-card p-6 overflow-auto h-screen">
+	<h2 class="mb-6 text-lg font-semibold text-card-foreground">Settings</h2>
+
 	<div class="space-y-6">
-		Display Settings
-		<div class="space-y-4">
-			<h3 class="text-sm font-medium text-foreground">Display</h3>
-
-			<div class="flex items-center justify-between">
-				<Label for="minimap">Show Minimap</Label>
-				<Switch id="minimap" bind:checked={FlowState.showMinimap} />
-			</div>
-
-			<div class="flex items-center justify-between">
-				<Label for="controls">Show Controls</Label>
-				<Switch id="controls" bind:checked={FlowState.showControls} />
-			</div>
-
-			<div class="flex items-center justify-between">
-				<Label for="fitview">Auto Fit View</Label>
-				<Switch id="fitview" bind:checked={FlowState.fitViewEnabled} />
-			</div>
+		<!-- Match Size Setting -->
+		<div class="space-y-2 w-full">
+			<Label for="match-size">Match Size</Label>
+			<Select bind:value={matchSize} type="single" >
+				<SelectTrigger id="match-size" class="w-full">
+					{matchSize}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="2">2</SelectItem>
+					<SelectItem value="4">4</SelectItem>
+				</SelectContent>
+			</Select>
 		</div>
 
-		Animation Settings
+		<!-- Number of Matches Setting -->
 		<div class="space-y-2">
-			<Label for="animation"
-				>Animation Speed: {Math.round(animationSpeedValue[0])}%</Label
-			>
-			<Slider
-				id="animation"
-				min={0}
-				max={200}
-				step={10}
-				type="multiple"
-				bind:value={animationSpeedValue}
+			<Label for="num-matches">Number of Matches</Label>
+			<Input
+				id="num-matches"
+				type="number"
+				min="1"
+				bind:value={numberOfMatches}
+				class="w-full"
 			/>
 		</div>
 
-		Layout Settings
-		<div class="space-y-4">
-			<h3 class="text-sm font-medium text-foreground">Layout</h3>
-
-			<div class="space-y-2">
-				<Label for="spacing"
-					>Node Spacing: {nodeSpacingValue[0]}px</Label
-				>
-				<Slider
-					id="spacing"
-					min={50}
-					max={200}
-					step={10}
-					type="multiple"
-					bind:value={nodeSpacingValue}
-				/>
-			</div>
-
-			<div class="flex items-center justify-between">
-				<Label for="snap">Snap to Grid</Label>
-				<Input
-					id="snap1"
-					type="number"
-					bind:value={FlowState.snapToGrid[0]}
-				/>
-				<Input
-					id="snap1"
-					type="number"
-					bind:value={FlowState.snapToGrid[1]}
-				/>
-			</div>
-
-			{#if FlowState.snapToGrid}
-				<div class="space-y-2">
-					<Label for="gridsize">Grid Size: {gridSizeValue[0]}px</Label
-					>
-					<Slider
-						id="gridsize"
-						min={5}
-						max={50}
-						step={5}
-						type="multiple"
-						bind:value={gridSizeValue}
-					/>
-				</div>
-			{/if}
-		</div>
-
-		Status Display
-		<div class="rounded-lg border border-border bg-muted p-4">
-			<h3 class="mb-2 text-sm font-medium text-foreground">
-				Current Settings
-			</h3>
-			<div class="space-y-1 text-xs text-muted-foreground">
-				<p>Animation: {Math.round(FlowState.animationSpeed * 100)}%</p>
-				<p>Spacing: {FlowState.nodeSpacing}px</p>
-				<p>
-					Grid: {FlowState.snapToGrid
-						? `${FlowState.gridSize}px`
-						: "Off"}
-				</p>
-				<p>Minimap: {FlowState.showMinimap ? "Visible" : "Hidden"}</p>
-			</div>
-		</div>
-
-		Action Buttons
+		<!-- X Padding Setting -->
 		<div class="space-y-2">
-			<Button class="w-full" variant="outline" onclick={resetToDefaults}>
-				Reset to Defaults
+			<Label for="x-padding">X Padding (px)</Label>
+			<Input
+				id="x-padding"
+				type="number"
+				min="0"
+				bind:value={xPadding}
+				class="w-full"
+			/>
+		</div>
+
+		<!-- Y Padding Setting -->
+		<div class="space-y-2">
+			<Label for="y-padding">Y Padding (px)</Label>
+			<Input
+				id="y-padding"
+				type="number"
+				min="0"
+				bind:value={yPadding}
+				class="w-full"
+			/>
+		</div>
+
+		<!-- Added Organize and Clear buttons alongside Apply button -->
+		<div class="pt-4 space-y-2">
+			<Button class="w-full" variant="default" onclick={()=>{FlowServices.applySettings(Number(matchSize),numberOfMatches,xPadding,yPadding)}}>
+				Apply
+			</Button>
+			<Button class="w-full" variant="outline" onclick={()=>{FlowServices.organize()}}>
+				Organize
+			</Button>
+			<Button class="w-full" variant="outline" onclick={()=>{FlowServices.clearNodes()}}>
+				Clear
 			</Button>
 		</div>
 	</div>
