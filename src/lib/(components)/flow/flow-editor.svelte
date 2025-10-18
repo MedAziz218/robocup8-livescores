@@ -23,7 +23,7 @@
 	import { FlowState, FlowServices } from "$lib/stores/flow-state.svelte";
 
 	import MatchNode from "./match-node.svelte";
-	$inspect(FlowState.startRound)
+	$inspect(FlowState.startRound);
 	import {
 		type FitViewOptions,
 		useSvelteFlow,
@@ -59,6 +59,29 @@
 		FlowServices.init(sv, c);
 		FlowState.setNodes = setNodes;
 		FlowState.setEdges = setEdges;
+	});
+
+	$effect(() => {
+		if (nodes.length ){
+			localStorage.setItem("nodes", JSON.stringify($state.snapshot(nodes)));
+		}
+		if (edges.length){
+			localStorage.setItem("edges", JSON.stringify($state.snapshot(edges)));
+		}
+	});
+
+	$effect(() => {
+		localStorage.setItem("FlowState", JSON.stringify($state.snapshot(FlowState))); 
+	});
+	let hasLoaded = $state(false);
+	$effect(() => {
+		if (!hasLoaded) {
+			nodes = JSON.parse(localStorage.getItem("nodes")||'[]');
+			edges = JSON.parse(localStorage.getItem("edges")||'[]');
+			
+
+			hasLoaded = true;
+		}
 	});
 </script>
 
@@ -121,9 +144,9 @@
 		>
 			<select
 				bind:value={FlowState.startRound}
-				onchange={()=>{
-					FlowServices.organize()
-					FlowServices.fitWholeView()
+				onchange={() => {
+					FlowServices.organize();
+					FlowServices.fitWholeView();
 				}}
 			>
 				{#each Rounds as round}

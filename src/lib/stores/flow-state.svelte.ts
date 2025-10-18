@@ -168,7 +168,7 @@ type FlowStateType = {
 	ypadding: number,
 	startRound: number,
 }
-const FlowState = $state<FlowStateType>({
+let defaultFlowState: FlowStateType= {
 	initialNodes: () => initialNodes,
 	initialEdges: () => initialEdges,
 	setNodes: undefined,
@@ -188,11 +188,14 @@ const FlowState = $state<FlowStateType>({
 	numberOfInitialMatches: 0,
 	numberOfTotlaMatches: 0,
 	numberOfRounds: 0,
-	xpadding: 50,
+	xpadding: 200,
 	ypadding: 0,
 	startRound: 1,
+}
 
-})
+const loadedFlowState = JSON.parse(localStorage.getItem("FlowState")||'[]') ;
+const FlowState = $state<FlowStateType>(loadedFlowState ? loadedFlowState: defaultFlowState)
+
 
 let _isFullScreen = $state<boolean>(false)
 let _useSvelteFlow = $state<ReturnType<typeof useSvelteFlow>>()
