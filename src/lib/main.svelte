@@ -6,10 +6,10 @@
 	import { LightSwitch } from "$lib/(components)/common";
 	import { FlowServices } from "$lib/stores/flow-state.svelte";
 
-	$effect(() => {
-		window.addEventListener("keydown", FlowServices.handleKeydown);
-		return () => window.removeEventListener("keydown", FlowServices.handleKeydown);
-	});
+	// $effect(() => {
+		// window.addEventListener("keydown", FlowServices.handleKeydown);
+		// return () => window.removeEventListener("keydown", FlowServices.handleKeydown);
+	// });
 	
 </script>
 

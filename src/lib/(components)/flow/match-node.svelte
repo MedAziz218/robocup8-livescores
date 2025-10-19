@@ -135,9 +135,12 @@
       }
     }
   }
+  let width = $derived(FlowState.MatchNodewidth)
+
 </script>
 
-<div class="match-container">
+<div class="match-container" style="min-width: {width}px;">
+
   <div class="match-header">
     <span class="match-id">{`Match ${matchID}`}</span>
     <span class="match-size">{`R${round}`}</span>
@@ -246,7 +249,7 @@
     /* border: 2px solid hsl(var(--border)); */
     /* border-radius: 12px; */
     padding: 0px;
-    min-width: 320px;
+    /* min-width: 320px; */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 

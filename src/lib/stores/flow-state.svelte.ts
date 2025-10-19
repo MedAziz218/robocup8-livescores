@@ -124,7 +124,7 @@ function relabelNodes(nodes: Node[]) {
 					
 				}else {
 					team_counter++
-					teamsData[i].id = team_counter.toString()
+					// teamsData[i].id = team_counter.toString()
 					teamsData[i].teamID = team_counter
 					
 				}
@@ -221,9 +221,7 @@ const FocusMatchAnimation = $state<FitViewOptions>({
 });
 
 type FlowStateType = {
-	initialNodes: () => Node[],
-	initialEdges: () => Edge[],
-	//
+
 	animationSpeed: number,
 	showMinimap: boolean,
 	showControls: boolean,
@@ -242,11 +240,10 @@ type FlowStateType = {
 	ypadding: number,
 	startRound: number,
 	sidePanelTabValue: "builder"|"presenting"
+	MatchNodewidth:number,
 }
 let defaultFlowState: FlowStateType = {
-	initialNodes: () => initialNodes,
-	initialEdges: () => initialEdges,
-	//
+
 	animationSpeed: 1,
 	showMinimap: true,
 	showControls: true,
@@ -264,7 +261,8 @@ let defaultFlowState: FlowStateType = {
 	xpadding: 200,
 	ypadding: 0,
 	startRound: 1,
-	sidePanelTabValue:"presenting"
+	sidePanelTabValue:"presenting",
+	MatchNodewidth:320,
 }
 
 const loadedFlowState = JSON.parse(localStorage.getItem("FlowState") || '{}');
@@ -418,10 +416,10 @@ const FlowServices = $state({
 	},
 	handleKeydown: (e: KeyboardEvent) => {
 		switch (e.key) {
-			case "v":
-				e.preventDefault();
-				FlowServices.applySettings()
-				break;
+			// case "v":
+			// 	e.preventDefault();
+			// 	FlowServices.applySettings()
+			// 	break;
 			// case "c":
 			// 	e.preventDefault();
 			// 	FlowServices.clearNodes()
@@ -450,10 +448,7 @@ const FlowServices = $state({
 				break;
 		}
 	},
-	addTeam: (teamsData: TeamData[], newteam: TeamData) => {
-		const i = teamsData.findIndex((t) => t.teamID == -1);
-		teamsData[i] = newteam;
-	},
+
 	addTeamToMatch: (targetMatchID: string, winnerteamData: TeamData, oldWinnerTeamID?: number, sourceNodeID?: string) => {
 		// FlowServices.applySettings()
 		// console.log(FlowServices.getNodes())

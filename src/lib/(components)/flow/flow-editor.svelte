@@ -97,6 +97,7 @@
 		{nodeTypes}
 		minZoom={0.1}
 		maxZoom={2}
+		onkeydown={FlowServices.handleKeydown}
 	>
 		<Background {bgColor} variant={BackgroundVariant.Dots} />
 

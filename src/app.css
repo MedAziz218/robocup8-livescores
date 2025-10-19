@@ -55,6 +55,10 @@
   --chart-3: hsl(40 12% 30%);
   --chart-4: hsl(43 70% 60%);
   --chart-5: hsl(40 20% 40%);
+
+  --are-color-gray: #1D1C18;
+  --are-color-yellow: #E2AC0D;
+  --are-color-beige: #E1DBBD;
 }
 
 @theme inline {
@@ -91,6 +95,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
