@@ -1,8 +1,8 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Textarea } from '$lib/components/ui/textarea';
-
+	// import { Textarea } from '$lib/components/ui/textarea';
+	import {FlowState,FlowServices} from '$lib/stores/flow-state.svelte'
 
 	export interface Props {
 		open?: boolean;
@@ -17,6 +17,7 @@
 	function handleApply() {
 		onApply?.(teamNamesText);
 		teamNamesText = '';
+		FlowServices.applyTeamNames();
 		open = false;
 	}
 
@@ -58,7 +59,7 @@
 				<div class="flex-1 relative overflow-hidden">
 					<textarea
 						bind:this={textareaElement}
-						bind:value={teamNamesText}
+						bind:value={FlowState.teamNames}
 						placeholder="Team 1&#10;Team 2&#10;Team 3..."
 						class="w-full h-full p-2 font-mono text-sm resize-none bg-background dark:bg-[#1D1C18] text-foreground dark:text-[#E1DBBD] placeholder-muted-foreground dark:placeholder-[#8b8575] border-0 focus:outline-none focus:ring-0"
 					></textarea>

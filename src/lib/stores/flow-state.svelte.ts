@@ -241,6 +241,7 @@ type FlowStateType = {
 	startRound: number,
 	sidePanelTabValue: "builder"|"presenting"
 	MatchNodewidth:number,
+	teamNames: string,
 }
 let defaultFlowState: FlowStateType = {
 
@@ -263,6 +264,7 @@ let defaultFlowState: FlowStateType = {
 	startRound: 1,
 	sidePanelTabValue:"presenting",
 	MatchNodewidth:320,
+	teamNames:'',
 }
 
 const loadedFlowState = JSON.parse(localStorage.getItem("FlowState") || '{}');
@@ -293,6 +295,27 @@ const FlowServices = $state({
 	getEdges: () => { _check(); return _useSvelteFlow?.getEdges() || [] },
 	setNodes: (nodes: Node[]) => { },
 	setEdges: (edges: Edge[]) => { },
+	applyTeamNames: () =>{
+		let nodes = FlowServices.getNodes()
+		let tl = FlowState.teamNames.split('\n')
+		let i = 0
+		let j = 0
+					console.log("applying shit")
+
+		while (i<FlowState.numberOfTeamsUsed){
+			let teamsData = nodes[j].data.teamsData as TeamData[]
+			teamsData.map((t)=>{
+				if (t.teamID != -1 && ! t.isBlank){
+					t.teamName = tl[i]
+					i++;
+					console.log(t.teamID, t.teamName)
+				}
+			})
+			_useSvelteFlow?.updateNodeData(nodes[j].id,{teamsData:teamsData})
+			j++
+		}
+
+	},
 	focusMatch: (matchID: string | number) => {
 		matchID = matchID.toString()
 		if (!_check()) return;
