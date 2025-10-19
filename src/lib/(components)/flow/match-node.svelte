@@ -1,6 +1,6 @@
 <script module>
   import type { Node, NodeProps } from "@xyflow/svelte";
-  import { Handle, Position, useNodes } from "@xyflow/svelte";
+  import { getConnectedEdges, Handle, Position, useNodes } from "@xyflow/svelte";
 
   import type { TeamData } from "./team-component.svelte";
   import { Separator } from "$lib/components/ui/separator";
@@ -29,6 +29,7 @@
     MatchIsDone?: boolean;
     winnerteamID?: number;
     winnerNextMatchID?: string;
+    prevMatchesCount? :number,
   };
   export type MatchNode = Node<MatchNodeData>;
 </script>
@@ -36,7 +37,7 @@
 <script lang="ts">
   import TeamComponent from "./team-component.svelte";
   import { useNodesData } from '@xyflow/svelte';
-  const { updateNodeData, fitView,getNode } = useSvelteFlow();
+  const { updateNodeData, updateNode,updateEdge,fitView,getNode } = useSvelteFlow();
   let { id: nodeID, data = $bindable()}: NodeProps<MatchNode> = $props();
  
   const nodeData = useNodesData([nodeID]);
@@ -48,13 +49,17 @@
     MatchIsDone,
     winnerteamID,
     winnerNextMatchID,
+    prevMatchesCount
   } = $state(data);
 
+  
   $effect(() => {
     // nodeData changes whenever the data of the passed node ids get updated
     if (nodeData.current[0].data){
       teamsData = nodeData.current[0].data.teamsData as TeamData[]
       winnerNextMatchID = nodeData.current[0].data.winnerNextMatchID as string
+      matchID = nodeData.current[0].data.matchID as number
+      prevMatchesCount = nodeData.current[0].data.prevMatchesCount as number
     }
   });
 
@@ -151,6 +156,7 @@
               id={team.id}
               teamID={team.teamID}
               teamName={team.teamName}
+              isBlank={team.isBlank}
               bind:teamStatus={teamsData[index].teamStatus}
               universityAbbr={team.universityAbbr}
             />
@@ -171,6 +177,20 @@
                 Focus
               </ContextMenuItem>
 
+              <ContextMenuItem
+                class={[FlowState.sidePanelTabValue  != "builder"&&"hidden"]}
+
+                onclick={() =>{
+                  team.isBlank = !team.isBlank
+                  // team.teamName = "ggez"
+                  // team.teamID = 666
+
+                  
+                  
+                  }}
+              >
+                {(team.isBlank?"unset":"set")+" empty"}
+              </ContextMenuItem>
               <ContextMenuSeparator></ContextMenuSeparator>
               <ContextMenuItem
                 class="bg-destructive"
@@ -183,6 +203,27 @@
                   )}
               >
                 ToggleEliminate
+              </ContextMenuItem>
+              <ContextMenuItem
+                class={["bg-destructive",FlowState.sidePanelTabValue  != "builder"&&"hidden"]}
+                disabled={team.teamStatus == "winner"}
+                onclick={() =>{
+                    FlowServices.addTeamToMatch(winnerNextMatchID||'',{...teamsData[0]},)
+                    updateNode(nodeID,{hidden:true})
+                    
+                    for (let i=0; i< teamsData.length;i++){
+                      teamsData[i].isBlank = true
+                      teamsData[i].teamID = -1
+                      
+                    }
+                    matchID = -1
+                    updateNodeData(nodeID,{matchID:-1})
+                    updateEdge(`${nodeID}-${winnerNextMatchID}`,{id:`${nodeID}-${winnerNextMatchID}-hidden`,hidden:true})
+
+                    
+                  }}
+              >
+                hideMatch
               </ContextMenuItem>
 
               <ContextMenuSeparator></ContextMenuSeparator>

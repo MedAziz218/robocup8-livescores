@@ -11,11 +11,16 @@ import { type TeamData } from '$lib/(components)/flow/team-component.svelte';
 import { type MatchNode, type MatchNodeData } from '$lib/(components)/flow/match-node.svelte';
 let initialNodes: Node[] = []
 let initialEdges: Edge[] = []
-type EdgeData = {round:number}
+type EdgeData = { round: number }
 export type CustomEdge = Edge<EdgeData>;
-function closestPower(n: number, p: number) {
+function closestUpperPower(n: number, p: number) {
 	let x = p
-	while (x <= n) x *= p;
+	while (x < n) x *= p;
+	return x / p
+}
+function closestLowerPower(n: number, p: number) {
+	let x = p
+	while (x < n) x *= p;
 	return x / p
 }
 function TournamentRounds(n: number, p: number) {
@@ -33,7 +38,7 @@ function generateInitialNodes() {
 	let team_counter = 0;
 	let match_counter = 0;
 
-	let numberOfInitialMatches = closestPower(_numberOfTeams / _matchSize, _matchSize)
+	let numberOfInitialMatches = closestUpperPower(_numberOfTeams, _matchSize)
 
 	let { numberOfTotlaMatches, numberOfRounds } = TournamentRounds(numberOfInitialMatches, _matchSize);
 
@@ -42,8 +47,15 @@ function generateInitialNodes() {
 	FlowState.numberOfRounds = numberOfRounds;
 
 	// add first round
+	let round2PrevMatchesCount = (_numberOfTeams - numberOfInitialMatches ) /numberOfInitialMatches 
+	console.log("ez",round2PrevMatchesCount)
+	round2PrevMatchesCount = Math.ceil(round2PrevMatchesCount+0.5)
+	if (_numberOfTeams == numberOfInitialMatches*_matchSize) {
+		round2PrevMatchesCount = _matchSize
+	}
 
-	for (let i = 1; i <= numberOfInitialMatches; i++) {
+	console.log("ggg",round2PrevMatchesCount, _numberOfTeams ,numberOfInitialMatches,numberOfTotlaMatches)
+	for (let i = 1; i <= numberOfInitialMatches*round2PrevMatchesCount/_matchSize; i++) {
 
 		let Teams: TeamData[] = []
 
@@ -66,6 +78,7 @@ function generateInitialNodes() {
 			},
 		)
 	}
+	FlowState.numberOfTeamsUsed = team_counter
 
 	for (let r = 2; r <= numberOfRounds; r++) {
 		for (let i = 1; i <= _matchSize ** (numberOfRounds - r); i++) {
@@ -85,7 +98,8 @@ function generateInitialNodes() {
 						round: r,
 						matchID: match_counter,
 						matchSize: FlowState.matchSize,
-						teamsData: Teams
+						teamsData: Teams,
+						prevMatchesCount: r==2? round2PrevMatchesCount : undefined
 					},
 					position: { x: 0, y: 0 },
 				},
@@ -93,6 +107,64 @@ function generateInitialNodes() {
 		}
 
 	}
+}
+function relabelNodes(nodes: Node[]) {
+	let team_counter = 0
+	let match_counter = 0
+	nodes.map((n) => {
+		let data = n.data as MatchNodeData
+		if (data.matchID == -1) return n 
+		if (data.round == 1) {
+			let teamsData = data.teamsData as TeamData[]
+
+			for (let i = 0; i < teamsData.length; i++) {
+				if (teamsData[i].isBlank) {
+					teamsData[i].teamID = 666
+
+					
+				}else {
+					team_counter++
+					teamsData[i].id = team_counter.toString()
+					teamsData[i].teamID = team_counter
+					
+				}
+			}
+		}
+		match_counter++
+		data.matchID = match_counter
+		n.data = data
+
+		return n
+	})
+	nodes.map((n) => {
+		let data = n.data as MatchNodeData
+		if (data.round == 2) {
+			let teamsData = data.teamsData as TeamData[]
+			let x = _matchSize - (data.prevMatchesCount || _matchSize) 
+			for (let i = 0; i < teamsData.length; i++) {
+				if (teamsData[i].teamID != -1) {
+					team_counter++
+					teamsData[i].id = team_counter.toString()
+					teamsData[i].teamID = team_counter
+				}
+			}
+			x = x - teamsData.filter((t)=>t.teamID!=-1).length
+			console.log("Xxxxxxxxxxxxxxxxxxxxx",x)
+			if (x>0){
+				for (let i=0;i<x ; i++){
+					const a = teamsData.findIndex((t)=>t.teamID==-1)
+					if (a == -1){throw Error("problem here")}
+					team_counter++
+					teamsData[i].id = team_counter.toString()
+					teamsData[i].teamID = team_counter
+				}
+			}
+		}
+
+		return n
+	})
+	FlowState.numberOfTeamsUsed = team_counter
+	return nodes
 }
 
 function generateInitialEdges() {
@@ -106,14 +178,18 @@ function generateInitialEdges() {
 		let a = 0
 
 		for (let b = 0; b < roundB.length; b++) {
-			for (let _ = 0; _ < _matchSize; _++) {
+			let x = _matchSize
+			if (roundB[b].data.prevMatchesCount) {
+				x = roundB[b].data.prevMatchesCount as number
+			}
+			for (let _ = 0; _ < x; _++) {
 				let e: CustomEdge = {
 					id: `${roundA[a].id}-${roundB[b].id}`,
 					source: roundA[a].id,
 					target: roundB[b].id,
 					type: 'step',
 					style: `stroke-width: 3px;`,
-					data: {round:r}
+					data: { round: r }
 				}
 				a++
 				initialEdges.push(e)
@@ -147,9 +223,6 @@ const FocusMatchAnimation = $state<FitViewOptions>({
 type FlowStateType = {
 	initialNodes: () => Node[],
 	initialEdges: () => Edge[],
-	setNodes: ((nodes: Node[]) => void) | undefined,
-	setEdges: ((edges: Edge[]) => void) | undefined,
-
 	//
 	animationSpeed: number,
 	showMinimap: boolean,
@@ -161,19 +234,18 @@ type FlowStateType = {
 	gridSize: number,
 	matchSize: "2" | "4",
 	numberOfTeams: number,
+	numberOfTeamsUsed: number,
 	numberOfInitialMatches: number,
 	numberOfTotlaMatches: number,
 	numberOfRounds: number,
 	xpadding: number,
 	ypadding: number,
 	startRound: number,
+	sidePanelTabValue: "builder"|"presenting"
 }
-let defaultFlowState: FlowStateType= {
+let defaultFlowState: FlowStateType = {
 	initialNodes: () => initialNodes,
 	initialEdges: () => initialEdges,
-	setNodes: undefined,
-	setEdges: undefined,
-
 	//
 	animationSpeed: 1,
 	showMinimap: true,
@@ -185,16 +257,18 @@ let defaultFlowState: FlowStateType= {
 	gridSize: 15,
 	matchSize: "2",
 	numberOfTeams: 19,
+	numberOfTeamsUsed: 20,
 	numberOfInitialMatches: 0,
 	numberOfTotlaMatches: 0,
 	numberOfRounds: 0,
 	xpadding: 200,
 	ypadding: 0,
 	startRound: 1,
+	sidePanelTabValue:"presenting"
 }
 
-const loadedFlowState = JSON.parse(localStorage.getItem("FlowState")||'[]') ;
-const FlowState = $state<FlowStateType>(loadedFlowState ? loadedFlowState: defaultFlowState)
+const loadedFlowState = JSON.parse(localStorage.getItem("FlowState") || '{}');
+const FlowState = $state<FlowStateType>(loadedFlowState.fitViewEnabled ? loadedFlowState : defaultFlowState)
 
 
 let _isFullScreen = $state<boolean>(false)
@@ -219,7 +293,8 @@ const FlowServices = $state({
 	toggleFullScreen: () => { _check() && (_isFullScreen = !_isFullScreen) },
 	getNodes: () => { _check(); return _useSvelteFlow?.getNodes() || [] },
 	getEdges: () => { _check(); return _useSvelteFlow?.getEdges() || [] },
-
+	setNodes: (nodes: Node[]) => { },
+	setEdges: (edges: Edge[]) => { },
 	focusMatch: (matchID: string | number) => {
 		matchID = matchID.toString()
 		if (!_check()) return;
@@ -250,17 +325,17 @@ const FlowServices = $state({
 		let a = nodes.length
 
 		nodes = nodes.map((n) => {
-			if (n.data.round as number <FlowState.startRound){
+			if (n.data.round as number < FlowState.startRound) {
 				n.hidden = true
-			}else {
+			} else if (n.data.matchID != -1){
 				n.hidden = false
 			}
 			return n
 		})
 		edges = edges.map((e) => {
-			if (e.data?.round as number < FlowState.startRound){
+			if (e.data?.round as number < FlowState.startRound) {
 				e.hidden = true
-			}else {
+			} else if (! e.id.endsWith('-hidden')){
 				e.hidden = false
 			}
 			return e
@@ -288,7 +363,6 @@ const FlowServices = $state({
 				const node = round_nodes[i]
 				const connected_nodes_ids = edges.filter((e) => e.target == node.id).map((e) => e.source)
 				const connected_nodes_y = nodes.filter((n) => connected_nodes_ids.includes(n.id)).map((n) => n.position.y)
-				console.log(connected_nodes_y)
 				const y = (Math.max(...connected_nodes_y) + Math.min(...connected_nodes_y)) / 2
 				// h += h0
 				// _useSvelteFlow?.updateNode(round_nodes[i].id, { position: { x: w * r, y: y } })
@@ -304,8 +378,8 @@ const FlowServices = $state({
 			}
 
 		}
-
-		FlowState.setNodes && FlowState.setNodes(nodes);
+		nodes = relabelNodes(nodes)
+		FlowServices.setNodes && FlowServices.setNodes(nodes);
 		nodes.map((n) => { _useSvelteFlow?.updateNodeData(n.id, n.data) })
 
 
@@ -328,8 +402,8 @@ const FlowServices = $state({
 		generateInitialNodes()
 		generateInitialEdges()
 		setTimeout(() => {
-			FlowState.setNodes && FlowState.setNodes(initialNodes);
-			FlowState.setEdges && FlowState.setEdges(initialEdges);
+			FlowServices.setNodes && FlowServices.setNodes(initialNodes);
+			FlowServices.setEdges && FlowServices.setEdges(initialEdges);
 		}, 0)
 
 
@@ -348,10 +422,10 @@ const FlowServices = $state({
 				e.preventDefault();
 				FlowServices.applySettings()
 				break;
-			case "c":
-				e.preventDefault();
-				FlowServices.clearNodes()
-				break;
+			// case "c":
+			// 	e.preventDefault();
+			// 	FlowServices.clearNodes()
+			// 	break;
 			case "o":
 				e.preventDefault();
 				FlowServices.organize()
@@ -380,7 +454,7 @@ const FlowServices = $state({
 		const i = teamsData.findIndex((t) => t.teamID == -1);
 		teamsData[i] = newteam;
 	},
-	addTeamToMatch: (targetMatchID: string, winnerteamData: TeamData, oldWinnerTeamID?: number, sourceNodeID?:string) => {
+	addTeamToMatch: (targetMatchID: string, winnerteamData: TeamData, oldWinnerTeamID?: number, sourceNodeID?: string) => {
 		// FlowServices.applySettings()
 		// console.log(FlowServices.getNodes())
 		const n = FlowServices.getNodes().find((n) => n.id == targetMatchID)
@@ -400,38 +474,38 @@ const FlowServices = $state({
 			if (i < 0) {
 
 				i = old_teams_data.findIndex((t) => t.teamID == -1)
-				old_teams_data[i] = { ...winnerteamData, teamStatus: undefined,id:old_teams_data[i].id  }
+				old_teams_data[i] = { ...winnerteamData, teamStatus: undefined, id: old_teams_data[i].id }
 			}
 		}
 
 		_useSvelteFlow?.updateNodeData(n.id, { teamsData: old_teams_data })
 
-		
-		if (sourceNodeID){
-			const e = FlowServices.getEdges().find((e)=>e.source==sourceNodeID)
+
+		if (sourceNodeID) {
+			const e = FlowServices.getEdges().find((e) => e.source == sourceNodeID)
 			if (e)
-			_useSvelteFlow?.updateEdge(e.id, {...e,style: `stroke-width: 3px; stroke: green`})
+				_useSvelteFlow?.updateEdge(e.id, { ...e, style: `stroke-width: 3px; stroke: green` })
 		}
 	}
 	,
-	removeTeamFromMatch: (targetMatchID: string, winnerteamData: TeamData,sourceNodeID?:string) => {
+	removeTeamFromMatch: (targetMatchID: string, winnerteamData: TeamData, sourceNodeID?: string) => {
 		// FlowServices.applySettings()
 		// console.log(FlowServices.getNodes())
 		const n = FlowServices.getNodes().find((n) => n.id == targetMatchID)
 		if (!n) { console.log("cant find id "); return }
 
 		let old_teams_data = n.data.teamsData as TeamData[]
-		
+
 
 		let i = old_teams_data.findIndex((t) => t.teamID == winnerteamData.teamID)
-		console.log("here is i ",i,n.id)
-		old_teams_data[i] = { ...winnerteamData, teamStatus: undefined, teamID:-1 ,teamName:'-',id:old_teams_data[i].id }
+		console.log("here is i ", i, n.id)
+		old_teams_data[i] = { ...winnerteamData, teamStatus: undefined, teamID: -1, teamName: '-', id: old_teams_data[i].id }
 
 		_useSvelteFlow?.updateNodeData(n.id, { teamsData: old_teams_data })
-		if (sourceNodeID){
-			const e = FlowServices.getEdges().find((e)=>e.source==sourceNodeID)
+		if (sourceNodeID) {
+			const e = FlowServices.getEdges().find((e) => e.source == sourceNodeID)
 			if (e)
-			_useSvelteFlow?.updateEdge(e.id, {...e,style: `stroke-width: 3px;`})
+				_useSvelteFlow?.updateEdge(e.id, { ...e, style: `stroke-width: 3px;` })
 		}
 	}
 

@@ -1,6 +1,6 @@
 <script module>
   interface TeamData {
-    id: string,
+    id: string;
     teamID: number;
     teamName: string;
     teamStatus?: "winner" | "loser" | "eliminated" | undefined;
@@ -16,8 +16,20 @@
     teamID,
     teamName,
     teamStatus = $bindable(undefined),
+    isBlank = false,
     universityAbbr = "",
   }: TeamData = $props();
+
+  let displayTeamID = $derived.by(() => {
+    if (isBlank) {
+      
+      return "`";
+    }
+    else if (teamID > 0) {
+      return teamID.toString();
+    }  
+    return "-";
+  });
 </script>
 
 <div
@@ -26,31 +38,32 @@
   class:winner={teamStatus === "winner"}
   class:loser={teamStatus === "loser"}
   class:eliminated={teamStatus === "eliminated"}
+  class:blank={isBlank && teamStatus == undefined}
 
 >
   <div
     class="flex h-[100%] w-[25px] items-center justify-center border-r
              border-gray-300 bg-gray-200 py-1
            font-semibold text-gray-700
-             dark:border-gray-600 dark:bg-[#E2AC0D]"
+             dark:border-gray-600 dark:bg-[#E2AC0D] "
   >
-    {teamID>0 ? teamID : '-'}
+    {displayTeamID}
   </div>
   <div
     class="w-full truncate bg-white py-1 pl-1 text-left text-gray-800
              hover:bg-gray-100 dark:bg-[#E1DBBD]
-             dark:hover:bg-gray-300"
+             dark:hover:bg-gray-300 "
   >
     {#if teamStatus === "winner"}
       <span class="font-bold">🏆 {teamName}</span>
     {:else if teamStatus === "loser"}
       <span class="line-through">{teamName}</span>
     {:else if teamStatus === "eliminated"}
-      <span class="line-through decoration-red-600 decoration-4 "
+      <span class="line-through decoration-red-600 decoration-4"
         >{teamName}</span
       >
     {:else}
-      {teamName}
+      {isBlank ? "`":teamName }
     {/if}
   </div>
 </div>
@@ -65,7 +78,9 @@
     background-color: rgba(154, 230, 180, 0.5) !important;
   }
 
-  .loser ,.eliminated {
+  .blank,
+  .loser,
+  .eliminated {
     opacity: 0.6;
     background-color: rgba(254, 178, 178, 0.1);
   }

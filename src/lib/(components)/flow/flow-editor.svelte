@@ -23,7 +23,6 @@
 	import { FlowState, FlowServices } from "$lib/stores/flow-state.svelte";
 
 	import MatchNode from "./match-node.svelte";
-	$inspect(FlowState.startRound);
 	import {
 		type FitViewOptions,
 		useSvelteFlow,
@@ -57,8 +56,8 @@
 
 	$effect(() => {
 		FlowServices.init(sv, c);
-		FlowState.setNodes = setNodes;
-		FlowState.setEdges = setEdges;
+		FlowServices.setNodes = setNodes;
+		FlowServices.setEdges = setEdges;
 	});
 
 	$effect(() => {
@@ -71,7 +70,9 @@
 	});
 
 	$effect(() => {
-		localStorage.setItem("FlowState", JSON.stringify($state.snapshot(FlowState))); 
+		if (FlowState.fitViewEnabled){
+			localStorage.setItem("FlowState", JSON.stringify($state.snapshot(FlowState))); 
+		}
 	});
 	let hasLoaded = $state(false);
 	$effect(() => {
