@@ -15,6 +15,7 @@
 
 	import TeamNamesDialog from "$lib/(components)/common/team-names-dialog.svelte";
 	let openTeamNamesDialog = $state(false)
+	let fileInput: HTMLInputElement;
 </script>
 <TeamNamesDialog bind:open={openTeamNamesDialog}/>
 {#if !FlowServices.isFullScreen()}
@@ -209,11 +210,28 @@
 					variant="default"
 					onclick={() => {
 						// TODO: Implement save to JSON functionality
+
+						FlowServices.saveToJson();
 					}}
 				>
 					<Download class="w-4 h-4 mr-2" />
 					Save to JSON
 				</Button>
+				<Button
+					class="w-full"
+					variant="default"
+					onclick={() => {
+						// TODO: Implement save to JSON functionality
+						fileInput.click()
+						
+					}}
+				>
+					<Download class="w-4 h-4 mr-2" />
+					Load from JSON
+				</Button>
+
+			<input bind:this={fileInput} style="display: none;" type="file" accept=".json" onchange={FlowServices.LoadFromJson} />
+
 			</TabsContent>
 		</Tabs>
 	</aside>

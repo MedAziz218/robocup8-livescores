@@ -47,15 +47,15 @@ function generateInitialNodes() {
 	FlowState.numberOfRounds = numberOfRounds;
 
 	// add first round
-	let round2PrevMatchesCount = (_numberOfTeams - numberOfInitialMatches ) /numberOfInitialMatches 
-	console.log("ez",round2PrevMatchesCount)
-	round2PrevMatchesCount = Math.ceil(round2PrevMatchesCount+0.5)
-	if (_numberOfTeams == numberOfInitialMatches*_matchSize) {
+	let round2PrevMatchesCount = (_numberOfTeams - numberOfInitialMatches) / numberOfInitialMatches
+	console.log("ez", round2PrevMatchesCount)
+	round2PrevMatchesCount = Math.ceil(round2PrevMatchesCount + 0.5)
+	if (_numberOfTeams == numberOfInitialMatches * _matchSize) {
 		round2PrevMatchesCount = _matchSize
 	}
 
-	console.log("ggg",round2PrevMatchesCount, _numberOfTeams ,numberOfInitialMatches,numberOfTotlaMatches)
-	for (let i = 1; i <= numberOfInitialMatches*round2PrevMatchesCount/_matchSize; i++) {
+	console.log("ggg", round2PrevMatchesCount, _numberOfTeams, numberOfInitialMatches, numberOfTotlaMatches)
+	for (let i = 1; i <= numberOfInitialMatches * round2PrevMatchesCount / _matchSize; i++) {
 
 		let Teams: TeamData[] = []
 
@@ -99,7 +99,7 @@ function generateInitialNodes() {
 						matchID: match_counter,
 						matchSize: FlowState.matchSize,
 						teamsData: Teams,
-						prevMatchesCount: r==2? round2PrevMatchesCount : undefined
+						prevMatchesCount: r == 2 ? round2PrevMatchesCount : undefined
 					},
 					position: { x: 0, y: 0 },
 				},
@@ -113,7 +113,7 @@ function relabelNodes(nodes: Node[]) {
 	let match_counter = 0
 	nodes.map((n) => {
 		let data = n.data as MatchNodeData
-		if (data.matchID == -1) return n 
+		if (data.matchID == -1) return n
 		if (data.round == 1) {
 			let teamsData = data.teamsData as TeamData[]
 
@@ -121,12 +121,12 @@ function relabelNodes(nodes: Node[]) {
 				if (teamsData[i].isBlank) {
 					teamsData[i].teamID = 666
 
-					
-				}else {
+
+				} else {
 					team_counter++
 					// teamsData[i].id = team_counter.toString()
 					teamsData[i].teamID = team_counter
-					
+
 				}
 			}
 		}
@@ -140,7 +140,7 @@ function relabelNodes(nodes: Node[]) {
 		let data = n.data as MatchNodeData
 		if (data.round == 2) {
 			let teamsData = data.teamsData as TeamData[]
-			let x = _matchSize - (data.prevMatchesCount || _matchSize) 
+			let x = _matchSize - (data.prevMatchesCount || _matchSize)
 			for (let i = 0; i < teamsData.length; i++) {
 				if (teamsData[i].teamID != -1) {
 					team_counter++
@@ -148,12 +148,12 @@ function relabelNodes(nodes: Node[]) {
 					teamsData[i].teamID = team_counter
 				}
 			}
-			x = x - teamsData.filter((t)=>t.teamID!=-1).length
-			console.log("Xxxxxxxxxxxxxxxxxxxxx",x)
-			if (x>0){
-				for (let i=0;i<x ; i++){
-					const a = teamsData.findIndex((t)=>t.teamID==-1)
-					if (a == -1){throw Error("problem here")}
+			x = x - teamsData.filter((t) => t.teamID != -1).length
+			console.log("Xxxxxxxxxxxxxxxxxxxxx", x)
+			if (x > 0) {
+				for (let i = 0; i < x; i++) {
+					const a = teamsData.findIndex((t) => t.teamID == -1)
+					if (a == -1) { throw Error("problem here") }
 					team_counter++
 					teamsData[i].id = team_counter.toString()
 					teamsData[i].teamID = team_counter
@@ -239,8 +239,8 @@ type FlowStateType = {
 	xpadding: number,
 	ypadding: number,
 	startRound: number,
-	sidePanelTabValue: "builder"|"presenting"
-	MatchNodewidth:number,
+	sidePanelTabValue: "builder" | "presenting"
+	MatchNodewidth: number,
 	teamNames: string,
 }
 let defaultFlowState: FlowStateType = {
@@ -262,9 +262,9 @@ let defaultFlowState: FlowStateType = {
 	xpadding: 200,
 	ypadding: 0,
 	startRound: 1,
-	sidePanelTabValue:"presenting",
-	MatchNodewidth:320,
-	teamNames:'',
+	sidePanelTabValue: "presenting",
+	MatchNodewidth: 320,
+	teamNames: '',
 }
 
 const loadedFlowState = JSON.parse(localStorage.getItem("FlowState") || '{}');
@@ -295,23 +295,47 @@ const FlowServices = $state({
 	getEdges: () => { _check(); return _useSvelteFlow?.getEdges() || [] },
 	setNodes: (nodes: Node[]) => { },
 	setEdges: (edges: Edge[]) => { },
-	applyTeamNames: () =>{
+	saveToJson: () => {
+		let s = { FlowState: FlowState, nodes: FlowServices.getNodes(), edges: FlowServices.getEdges() }
+		console.log("saving ", s)
+		downloadStringAsFile('flow.json', JSON.stringify(s))
+	},
+	LoadFromJson: (e: Event) => {
+		handleFileChange(e).then((str) => {
+			if (!str) throw Error("nope")
+			console.log("JSON as string:", );
+			let jsonobj = JSON.parse(str)
+			// @ts-ignore
+			// $state.apply(jsonobj.FlowState)
+			FlowServices.setNodes && FlowServices.setNodes(jsonobj.nodes)
+			FlowServices.setEdges && FlowServices.setEdges(jsonobj.edges)
+			console.log(jsonobj.nodes)
+			copyFlowState(jsonobj.FlowState)
+			// jsonobj.nodes.map((n) => { _useSvelteFlow?.updateNodeData(n.id, n.data) })
+
+		});
+
+		// downloadStringAsFile('flow.json',JSON.stringify(s))
+
+	},
+	applyTeamNames: () => {
 		let nodes = FlowServices.getNodes()
 		let tl = FlowState.teamNames.split('\n')
 		let i = 0
 		let j = 0
-					console.log("applying shit")
-
-		while (i<FlowState.numberOfTeamsUsed){
+		console.log("applying names")
+		if (FlowState.numberOfTeamsUsed >= tl.length) throw Error("list of names is too short")
+		while (i < FlowState.numberOfTeamsUsed && j < nodes.length) {
 			let teamsData = nodes[j].data.teamsData as TeamData[]
-			teamsData.map((t)=>{
-				if (t.teamID != -1 && ! t.isBlank){
+			teamsData.map((t) => {
+				if (t.teamID != -1 && !t.isBlank) {
 					t.teamName = tl[i]
 					i++;
 					console.log(t.teamID, t.teamName)
 				}
+
 			})
-			_useSvelteFlow?.updateNodeData(nodes[j].id,{teamsData:teamsData})
+			_useSvelteFlow?.updateNodeData(nodes[j].id, { teamsData: teamsData })
 			j++
 		}
 
@@ -348,7 +372,7 @@ const FlowServices = $state({
 		nodes = nodes.map((n) => {
 			if (n.data.round as number < FlowState.startRound) {
 				n.hidden = true
-			} else if (n.data.matchID != -1){
+			} else if (n.data.matchID != -1) {
 				n.hidden = false
 			}
 			return n
@@ -356,7 +380,7 @@ const FlowServices = $state({
 		edges = edges.map((e) => {
 			if (e.data?.round as number < FlowState.startRound) {
 				e.hidden = true
-			} else if (! e.id.endsWith('-hidden')){
+			} else if (!e.id.endsWith('-hidden')) {
 				e.hidden = false
 			}
 			return e
@@ -535,3 +559,83 @@ const MatchServices = $state({
 )
 // Export a single instance to be shared across components
 export { FlowState, FlowServices, FocusMatchAnimation, MatchServices }
+
+
+function downloadStringAsFile(filename: string, content: string) {
+	// Create a Blob with the content
+	const blob = new Blob([content], { type: 'text/plain' });
+
+	// Create a temporary anchor element
+	const a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	a.download = filename;
+
+	// Append to body, click it, and remove it
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+
+	// Release the object URL
+	URL.revokeObjectURL(a.href);
+}
+
+
+
+function handleFileChange(event: Event): Promise<string | null> {
+	return new Promise((resolve) => {
+		const input = event.target as HTMLInputElement;
+		let error, jsonString;
+
+		if (!input.files || input.files.length === 0) {
+			resolve(null);
+			return;
+		}
+
+		const file: File = input.files[0];
+
+		if (!file.name.endsWith(".json")) {
+			error = "Please select a JSON file";
+			jsonString = null;
+			resolve(null);
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = () => {
+			try {
+				const content = reader.result as string;
+				jsonString = content;
+				error = null;
+				resolve(content); // return JSON string
+			} catch {
+				error = "Invalid JSON file";
+				jsonString = null;
+				resolve(null);
+			}
+		};
+
+		reader.readAsText(file);
+	});
+}
+function copyFlowState(a: FlowStateType) {
+	FlowState.animationSpeed = a.animationSpeed;
+	FlowState.showMinimap = a.showMinimap;
+	FlowState.showControls = a.showControls;
+	FlowState.fitViewEnabled = a.fitViewEnabled;
+	FlowState.nodeSpacing = a.nodeSpacing;
+	FlowState.edgeStyle = a.edgeStyle;
+	FlowState.snapToGrid = [a.snapToGrid[0], a.snapToGrid[1]]; // copy tuple explicitly
+	FlowState.gridSize = a.gridSize;
+	FlowState.matchSize = a.matchSize;
+	FlowState.numberOfTeams = a.numberOfTeams;
+	FlowState.numberOfTeamsUsed = a.numberOfTeamsUsed;
+	FlowState.numberOfInitialMatches = a.numberOfInitialMatches;
+	FlowState.numberOfTotlaMatches = a.numberOfTotlaMatches;
+	FlowState.numberOfRounds = a.numberOfRounds;
+	FlowState.xpadding = a.xpadding;
+	FlowState.ypadding = a.ypadding;
+	FlowState.startRound = a.startRound;
+	FlowState.sidePanelTabValue = a.sidePanelTabValue;
+	FlowState.MatchNodewidth = a.MatchNodewidth;
+	FlowState.teamNames = a.teamNames;
+}

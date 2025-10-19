@@ -194,6 +194,7 @@
               >
                 {(team.isBlank?"unset":"set")+" empty"}
               </ContextMenuItem>
+              
               <ContextMenuSeparator></ContextMenuSeparator>
               <ContextMenuItem
                 class="bg-destructive"
